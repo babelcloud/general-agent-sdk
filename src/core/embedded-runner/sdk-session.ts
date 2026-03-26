@@ -23,6 +23,8 @@ import {
   createHostedToolSuspendEvents,
   createStopEvents,
 } from "../normalization/upstream-events.js";
+import { HostLoggerSink } from "../logging/host-logger.js";
+import { resolveHostSessionFile } from "../sessions/session-store.js";
 
 type PendingHostedToolCall = {
   callId: string;
@@ -52,7 +54,6 @@ type TranscriptEntry =
 
 export class OpenClawSdkSession implements OpenClawAgentSession {
   private params: OpenClawSessionParams;
-  private readonly logger: OpenClawAgentSdkOptions["logger"];
   private readonly sessionStore: OpenClawSessionStoreAdapter;
   private readonly hostedTools: OpenClawHostedToolDefinition[];
   private readonly restorePromise: Promise<void>;
@@ -63,28 +64,41 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
   private stopRequested = false;
   private currentQuery: OpenClawCurrentQueryLike | null = null;
   private lastCompactionAt = 0;
+  private loggerSink: HostLoggerSink;
 
   constructor(
     private readonly options: OpenClawAgentSdkOptions,
     params: OpenClawSessionParams,
   ) {
     this.params = params;
-    this.logger = options.logger;
     this.sessionStore = options.sessionStore;
     this.hostedTools = options.hostedTools ?? [];
     this.transcriptPath = params.sessionFile;
+    this.loggerSink = new HostLoggerSink(options.logger, params.rawEventLogPath);
     this.restorePromise = this.restoreStoredState();
   }
 
   reconfigure(params: OpenClawSessionParams): void {
     this.params = params;
     this.transcriptPath = params.sessionFile;
+    this.loggerSink = new HostLoggerSink(this.options.logger, params.rawEventLogPath);
   }
 
   async *streamTurn(input: OpenClawTurnInput): AsyncIterable<OpenClawStreamEvent> {
     await this.restorePromise;
+    this.transcriptPath = await resolveHostSessionFile(
+      this.sessionStore,
+      this.params.identity,
+      this.params.sessionFile,
+    );
     await this.ensureTranscriptPath();
     await this.logSystemPrompt();
+    this.loggerSink.emitRaw({
+      type: "query_started",
+      sessionId: this.params.identity.sessionId,
+      sessionKey: this.params.identity.sessionKey,
+      modelRef: this.params.modelRef,
+    });
     await this.appendTranscript({
       type: "message",
       role: input.role,
@@ -113,7 +127,7 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
         input: pending.input,
         timestamp: Date.now(),
       });
-      this.logger.onInfo({
+      this.loggerSink.emitInfo({
         category: "tool_call",
         message: pending.toolName,
         data: {
@@ -157,7 +171,7 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
       output: input.output,
       timestamp: Date.now(),
     });
-    this.logger.onInfo({
+    this.loggerSink.emitInfo({
       category: "tool_result",
       message: pending.toolName,
       data: {
@@ -190,7 +204,7 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
       isError: true,
       timestamp: Date.now(),
     });
-    this.logger.onError({
+    this.loggerSink.emitError({
       category: "tool_result",
       message: pending.toolName,
       data: {
@@ -285,9 +299,9 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
   }
 
   private async logSystemPrompt(): Promise<void> {
-    this.logger.onInfo({
+    this.loggerSink.emitInfo({
       category: "system_prompt",
-      message: this.params.systemPrompt,
+      message: this.params.systemPrompt.replace(/\n/g, "\\n"),
       data: {
         sessionId: this.params.identity.sessionId,
         sessionKey: this.params.identity.sessionKey,
@@ -366,7 +380,7 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
     events: Iterable<OpenClawStreamEvent>,
   ): AsyncIterable<OpenClawStreamEvent> {
     for (const event of events) {
-      this.logger.onRawStreamEvent?.(event as Record<string, unknown>);
+      this.loggerSink.emitRaw(event as Record<string, unknown>);
       yield event;
     }
   }
