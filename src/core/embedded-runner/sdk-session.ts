@@ -25,6 +25,7 @@ import {
 } from "../normalization/upstream-events.js";
 import { HostLoggerSink } from "../logging/host-logger.js";
 import { resolveHostSessionFile } from "../sessions/session-store.js";
+import { isToolAllowedInEmbeddedMode } from "../tools/tool-policy.js";
 
 type PendingHostedToolCall = {
   callId: string;
@@ -319,6 +320,18 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
   private resolveHostedTool(input: OpenClawTurnInput): OpenClawHostedToolDefinition | null {
     const text = this.extractText(input).toLowerCase();
     for (const tool of this.hostedTools) {
+      if (!isToolAllowedInEmbeddedMode(tool.name)) {
+        this.loggerSink.emitWarn({
+          category: "system",
+          message: `blocked embedded tool: ${tool.name}`,
+          data: {
+            toolName: tool.name,
+            sessionId: this.params.identity.sessionId,
+          },
+        });
+        continue;
+      }
+
       if (text.includes(tool.name.toLowerCase())) {
         return tool;
       }
