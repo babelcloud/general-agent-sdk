@@ -2,6 +2,7 @@ import type { OpenClawHostedToolDefinition } from "./host-tools.js";
 import type { OpenClawSessionStoreAdapter } from "./persistence.js";
 import type { OpenClawAgentSession } from "./session.js";
 import type { OpenClawHostLogger, OpenClawSessionParams } from "./types.js";
+import { createSdkFactory } from "../core/embedded-runner/sdk-factory.js";
 
 export interface OpenClawAgentSdkOptions {
   workspaceDir: string;
@@ -22,7 +23,7 @@ export interface OpenClawAgentSdk {
 }
 
 export async function createOpenClawAgentSdk(
-  _options: OpenClawAgentSdkOptions,
+  options: OpenClawAgentSdkOptions,
 ): Promise<OpenClawAgentSdk> {
-  throw new Error("OpenClaw Agent SDK bootstrap is not implemented yet");
+  return createSdkFactory(options);
 }

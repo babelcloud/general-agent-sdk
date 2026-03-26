@@ -1,5 +1,102 @@
 {
   "version": 1,
   "upstreamRepo": "https://github.com/openclaw/openclaw",
-  "entries": []
+  "entries": [
+    {
+      "dest": "src/upstream/openclaw/agents/pi-embedded-runner/run.ts",
+      "upstream": "src/agents/pi-embedded-runner/run.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    },
+    {
+      "dest": "src/upstream/openclaw/agents/pi-embedded-runner/run/attempt.ts",
+      "upstream": "src/agents/pi-embedded-runner/run/attempt.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    },
+    {
+      "dest": "src/upstream/openclaw/agents/pi-embedded-runner/run/params.ts",
+      "upstream": "src/agents/pi-embedded-runner/run/params.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    },
+    {
+      "dest": "src/upstream/openclaw/agents/pi-embedded-runner/session-manager-init.ts",
+      "upstream": "src/agents/pi-embedded-runner/session-manager-init.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    },
+    {
+      "dest": "src/upstream/openclaw/agents/pi-embedded-runner/context-engine-maintenance.ts",
+      "upstream": "src/agents/pi-embedded-runner/context-engine-maintenance.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    },
+    {
+      "dest": "src/upstream/openclaw/agents/pi-embedded-runner/compact.ts",
+      "upstream": "src/agents/pi-embedded-runner/compact.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    },
+    {
+      "dest": "src/upstream/openclaw/agents/pi-embedded-runner/transcript-rewrite.ts",
+      "upstream": "src/agents/pi-embedded-runner/transcript-rewrite.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    },
+    {
+      "dest": "src/upstream/openclaw/agents/pi-embedded-runner/types.ts",
+      "upstream": "src/agents/pi-embedded-runner/types.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    },
+    {
+      "dest": "src/upstream/openclaw/agents/pi-tool-definition-adapter.ts",
+      "upstream": "src/agents/pi-tool-definition-adapter.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    },
+    {
+      "dest": "src/upstream/openclaw/agents/runtime-plugins.ts",
+      "upstream": "src/agents/runtime-plugins.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    },
+    {
+      "dest": "src/upstream/openclaw/plugins/loader.ts",
+      "upstream": "src/plugins/loader.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    },
+    {
+      "dest": "src/upstream/openclaw/config/sessions/transcript.ts",
+      "upstream": "src/config/sessions/transcript.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    },
+    {
+      "dest": "src/upstream/openclaw/config/sessions/types.ts",
+      "upstream": "src/config/sessions/types.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    },
+    {
+      "dest": "src/upstream/openclaw/config/sessions/paths.ts",
+      "upstream": "src/config/sessions/paths.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    },
+    {
+      "dest": "src/upstream/openclaw/agents/agent-paths.ts",
+      "upstream": "src/agents/agent-paths.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    },
+    {
+      "dest": "src/upstream/openclaw/config/paths.ts",
+      "upstream": "src/config/paths.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "copied"
+    }
+  ]
 }
