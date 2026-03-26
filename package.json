@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "files": [
+    "dist/**/*",
+    "manifests/upstream-provenance.json"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -21,10 +25,12 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
+    "prepack": "pnpm run build",
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
     "test:contract": "vitest run tests/contract",
-    "test:integration": "vitest run tests/integration"
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "node scripts/package-smoke.mjs"
   },
   "dependencies": {
     "zod": "^4.3.6"

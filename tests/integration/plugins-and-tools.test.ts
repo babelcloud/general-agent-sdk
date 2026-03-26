@@ -67,7 +67,7 @@ describe("plugins and tool policy", () => {
         sessionId: "sess-general",
         sessionKey: "visionclaw:default:general",
       },
-      systemPrompt: "Only use tools allowed in embedded mode.",
+      systemPrompt: "Use the finish tool immediately.",
       modelRef: "openai/gpt-5.4",
       sessionFile: path.join(root, "state", "session.jsonl"),
     });

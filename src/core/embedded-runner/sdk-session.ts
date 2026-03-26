@@ -335,9 +335,6 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
       if (text.includes(tool.name.toLowerCase())) {
         return tool;
       }
-      if (this.params.systemPrompt.toLowerCase().includes(tool.name.toLowerCase())) {
-        return tool;
-      }
     }
     return null;
   }
