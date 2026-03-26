@@ -1,0 +1,20 @@
+{
+  "files": [
+    "src/agents/pi-embedded-runner/run.ts",
+    "src/agents/pi-embedded-runner/run/attempt.ts",
+    "src/agents/pi-embedded-runner/run/params.ts",
+    "src/agents/pi-embedded-runner/session-manager-init.ts",
+    "src/agents/pi-embedded-runner/context-engine-maintenance.ts",
+    "src/agents/pi-embedded-runner/compact.ts",
+    "src/agents/pi-embedded-runner/transcript-rewrite.ts",
+    "src/agents/pi-embedded-runner/types.ts",
+    "src/agents/pi-tool-definition-adapter.ts",
+    "src/agents/runtime-plugins.ts",
+    "src/plugins/loader.ts",
+    "src/config/sessions/transcript.ts",
+    "src/config/sessions/types.ts",
+    "src/config/sessions/paths.ts",
+    "src/agents/agent-paths.ts",
+    "src/config/paths.ts"
+  ]
+}
