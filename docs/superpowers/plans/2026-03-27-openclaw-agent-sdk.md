@@ -8,6 +8,8 @@
 
 **Tech Stack:** TypeScript, Node.js `>=22.14.0` for SDK and `24.12.0` for VisionClaw host, pnpm, vitest, zod, extracted OpenClaw embedded runner files, VisionClaw session/provider abstractions, git submodules.
 
+**Execution note:** Keep the package build graph restricted to `src/**/*`. Tests and `vitest.config.ts` must not be compiled under `rootDir: "src"`, and provenance-tracked `src/upstream/openclaw/**/*` may remain outside the compile graph until the required dependency closure is wrapped behind SDK-owned core modules.
+
 ---
 
 ## File Map

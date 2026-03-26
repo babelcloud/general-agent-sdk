@@ -219,6 +219,7 @@ openclaw_agent_sdk/
 
 - `src/public/*` is the only supported SDK surface.
 - `src/upstream/openclaw/*` contains only the extracted/adapted upstream subset required by the SDK and must not be imported directly by VisionClaw.
+- During the staged extraction phases, `src/upstream/openclaw/*` may be tracked for provenance while remaining outside the package compile graph until its dependency closure has been pulled behind SDK-owned wrappers. Provenance tracking is mandatory even when compile isolation is temporary.
 - Mirroring the full `/Users/apple/programme/funny_projects/openclaw` repository inside this SDK is explicitly forbidden.
 - Every extracted upstream file must have a provenance entry in `manifests/upstream-provenance.json`.
 - Every public export must be backed by contract tests.
