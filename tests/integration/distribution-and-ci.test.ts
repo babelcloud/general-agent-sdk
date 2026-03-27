@@ -30,4 +30,16 @@ describe("distribution and ci", () => {
     expect(workflow).toContain("node scripts/verify-upstream-snapshot.mjs");
     expect(workflow).toContain("pnpm run test:e2e");
   });
+
+  it("keeps the compat/visionclaw entrypoint in the built dist tree", () => {
+    const compatEntrypoint = path.join(
+      ROOT,
+      "dist",
+      "compat",
+      "visionclaw",
+      "index.js",
+    );
+
+    expect(fs.existsSync(compatEntrypoint)).toBe(true);
+  });
 });
