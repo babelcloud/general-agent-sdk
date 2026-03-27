@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a standalone `openclaw-agent-sdk` repository and integrate it into VisionClaw as a third engine backend without losing VisionClaw-owned session state, tool-call semantics, host-rooted logging, or cross-repo traceability.
+**Goal:** Build a standalone `openclaw-agent-sdk` repository and integrate it into VisionClaw as a third engine backend without losing VisionClaw-owned session state, same-session cross-engine continuity, tool-call semantics, host-rooted logging, or cross-repo traceability.
 
 **Architecture:** Work happens in two repositories with a strict dependency order. First, bootstrap and implement a session-first SDK in `/Users/apple/programme/funny_projects/openclaw_agent_sdk` by extracting the minimum embedded OpenClaw runner/kernel plus explicit persistence, logger, and hosted-tool seams. Second, after the SDK SHA is pushed to `babelcloud/openclaw-agent-sdk`, wire VisionClaw to it through an engine-discriminated provider bridge that normalizes SDK events into the existing `AgentStreamMessage`, `logger.ts`, and `session.json` contracts.
 
@@ -55,6 +55,7 @@
 - `src/agent/providers/openclaw/persistence.ts`: VisionClaw profile state -> SDK persistence adapter.
 - `src/agent/providers/openclaw/host-tools.ts`: VisionClaw hosted tool bridge and resume helpers.
 - `src/agent/providers/openclaw/session.ts`: `AgentSessionLike` wrapper for SDK sessions.
+- `src/agent/conversation-journal.ts`: host-owned canonical continuity journal and cross-engine resume prelude builder.
 - `src/agent/providers/session-types.ts`: optional type additions for the OpenClaw provider bridge.
 - `src/agent/providers/client-factory.ts`: engine labels and legacy model/provider compatibility helpers.
 - `src/agent/session-manager.ts`: engine-based session construction instead of Claude/OpenAI binary split.
@@ -73,9 +74,11 @@
 - `tests/unit/reconfigure.test.ts`: reconfigure CLI flow.
 - `tests/unit/agent/openclaw-event-normalizer.test.ts`: event mapping and host log parity.
 - `tests/unit/agent/openclaw-sdk-loader.test.ts`: lazy import + packaged-runtime resolution.
+- `tests/unit/agent/conversation-journal.test.ts`: canonical continuity journal, per-engine cursor, and resume-prelude behavior.
 - `tests/integration/session-manager.test.ts`: engine-based session creation and dual-session behavior.
 - `tests/integration/stream-handler.test.ts`: normalized tool/result behavior.
 - `tests/integration/openclaw-provider.test.ts`: OpenClaw provider end-to-end host integration.
+- `tests/integration/engine-switch-continuity.test.ts`: switching engines mid-session preserves the logical conversation without raw transcript sharing.
 - `tests/integration/openclaw-packaging.test.ts`: packaged vendor runtime availability.
 
 ### Cross-repo sequencing rule
@@ -1607,10 +1610,15 @@ Expected: VisionClaw can parse and describe the new engine, but it still cannot 
 - Create: `/Users/apple/programme/funny_projects/visionclaw_repo/src/agent/providers/openclaw/persistence.ts`
 - Create: `/Users/apple/programme/funny_projects/visionclaw_repo/src/agent/providers/openclaw/host-tools.ts`
 - Create: `/Users/apple/programme/funny_projects/visionclaw_repo/src/agent/providers/openclaw/session.ts`
+- Create: `/Users/apple/programme/funny_projects/visionclaw_repo/src/agent/conversation-journal.ts`
 - Modify: `/Users/apple/programme/funny_projects/visionclaw_repo/src/agent/session-manager.ts`
 - Modify: `/Users/apple/programme/funny_projects/visionclaw_repo/src/agent/loop.ts`
+- Modify: `/Users/apple/programme/funny_projects/visionclaw_repo/src/agent/stream-handler.ts`
+- Modify: `/Users/apple/programme/funny_projects/visionclaw_repo/src/config/index.ts`
 - Test: `/Users/apple/programme/funny_projects/visionclaw_repo/tests/unit/agent/openclaw-event-normalizer.test.ts`
+- Test: `/Users/apple/programme/funny_projects/visionclaw_repo/tests/unit/agent/conversation-journal.test.ts`
 - Test: `/Users/apple/programme/funny_projects/visionclaw_repo/tests/integration/openclaw-provider.test.ts`
+- Test: `/Users/apple/programme/funny_projects/visionclaw_repo/tests/integration/engine-switch-continuity.test.ts`
 - Test: `/Users/apple/programme/funny_projects/visionclaw_repo/tests/integration/session-manager.test.ts`
 - Test: `/Users/apple/programme/funny_projects/visionclaw_repo/tests/integration/stream-handler.test.ts`
 
@@ -1864,6 +1872,34 @@ getDynamicMcpServers(): Record<string, Record<string, unknown>> {
 // currentQueryLike?.toggleMcpServer is absent. Live mid-run toggle is best-effort only.
 ```
 
+- [ ] **Step 3.1: Add the host-owned continuity journal instead of raw transcript sharing**
+
+The bridge must not attempt to keep Claude/OpenAI/OpenClaw in one shared native transcript file. Implement a host-level normalized continuity journal and per-engine continuation cursor instead.
+
+Required behavior:
+
+- append normalized conversation events to `/Users/apple/programme/funny_projects/visionclaw_repo/src/agent/conversation-journal.ts`
+- keep provider-native transcripts separate:
+  - Claude transcript store
+  - OpenAI file session
+  - OpenClaw transcript store
+- persist per-engine continuity watermarks in `session.json` engine-scoped state
+- when the selected engine has not seen the latest journal tail, prepend a `[Cross-Engine Continuation]` payload built from:
+  - latest continuity summary
+  - recent unsynced journal events
+  - unresolved memo/task state
+- preserve exact tool names in journal events (`exec` stays `exec`)
+- never mirror one provider's native transcript format into another provider's native transcript format as the authoritative sync path
+
+Suggested tests:
+
+- `tests/unit/agent/conversation-journal.test.ts`
+  - appends `incoming_message`, `assistant_text`, `tool_call`, and `tool_result` records
+  - builds a continuation prelude from an unsynced tail
+  - preserves exact tool names
+- `tests/integration/engine-switch-continuity.test.ts`
+  - simulate turns on engine A, switch to engine B, and verify engine B receives a continuity prelude without reusing engine A's raw transcript path
+
 ```ts
 // Insert the OpenClaw branch into /Users/apple/programme/funny_projects/visionclaw_repo/src/agent/session-manager.ts
 import { OpenClawAgentSession } from "./providers/openclaw/session.js";
@@ -1906,7 +1942,9 @@ Run:
 cd /Users/apple/programme/funny_projects/visionclaw_repo
 pnpm exec vitest run \
   tests/unit/agent/openclaw-event-normalizer.test.ts \
+  tests/unit/agent/conversation-journal.test.ts \
   tests/integration/openclaw-provider.test.ts \
+  tests/integration/engine-switch-continuity.test.ts \
   tests/integration/session-manager.test.ts \
   tests/integration/stream-handler.test.ts
 ```

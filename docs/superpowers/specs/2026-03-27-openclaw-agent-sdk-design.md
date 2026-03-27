@@ -46,6 +46,7 @@ The OpenClaw Agent SDK is not a new channel system, not a new gateway, and not a
 - **Canonical session state remains unified in VisionClaw.**
 - OpenClaw Agent SDK must not introduce a second authoritative session registry such as a parallel `sessions.json` that independently allocates or owns session identity.
 - OpenClaw Agent SDK may emit provider-specific artifacts, but they must be rooted under the active VisionClaw profile directory and keyed by the canonical VisionClaw session id.
+- Cross-engine continuity for the same logical VisionClaw session must be host-owned. Switching from Claude/OpenAI/OpenClaw to another engine during an ongoing conversation must not depend on the operator manually restating recent context.
 
 ### 2.3 Integration requirements
 
@@ -442,6 +443,74 @@ VisionClaw remains the only owner of canonical session state:
 
 In concrete terms, the authoritative file remains VisionClaw's profile-scoped `session.json`.
 
+`session.json` is authoritative for session metadata and engine-scoped resumption pointers. It is not, by itself, sufficient to guarantee cross-engine conversational continuity.
+
+### 10.1.1 Host-owned continuity journal
+
+VisionClaw must also own a canonical cross-engine continuity journal for each logical session mode.
+
+Planned host-rooted paths:
+
+```text
+~/.visionclaw/profiles/<profile>/conversations/
+  general.jsonl
+  coding.jsonl
+  general.summary.json
+  coding.summary.json
+```
+
+Phase-1 continuity is keyed by VisionClaw mode (`general` / `coding`), not by per-channel chat id. Per-chat thread isolation is a separate feature and out of scope for this design.
+
+The continuity journal stores normalized host-level events emitted from every engine, including:
+
+- inbound owner messages
+- assistant text outputs
+- tool calls and tool results
+- session-switch markers
+- compaction/continuity summaries
+- system-prompt audit snapshots
+
+Tool names must be preserved verbatim in these records. For example, if OpenClaw emits `exec`, the journal stores `exec`, not a VisionClaw alias or display-only rename. Human-friendly labels may be derived later in UI code, but the persisted semantic name must remain exact.
+
+This journal is the canonical short-term continuity artifact across engines. It is distinct from:
+
+- `session.json`, which owns session metadata and engine pointers
+- `/memories`, which owns explicit long-term memory curated by the agent
+- provider-native transcripts, which remain engine-private execution artifacts
+
+### 10.1.2 Per-engine continuity cursor
+
+Each engine-specific session state must track how far that engine has consumed the canonical continuity journal for each VisionClaw mode.
+
+Conceptually, `session.json.engineState[engine]` must include per-mode continuity watermarks such as:
+
+- `generalContinuationSeq`
+- `codingContinuationSeq`
+
+The exact field names may vary, but the behavior is mandatory:
+
+- when an engine runs normally, its provider-native transcript remains the first-class same-engine resume source
+- when the selected engine changes, VisionClaw computes the journal delta that the target engine has not yet seen
+- VisionClaw injects that missing delta as a cross-engine continuation prelude before the current wake payload, or uses an engine-native seed/import mechanism if one later proves equivalent
+- after the continuation payload has been accepted, the engine's continuity cursor advances
+
+This makes engine switching an incremental synchronization problem instead of a raw transcript sharing problem.
+
+### 10.1.3 Cross-engine resume contract
+
+When the target engine is behind the continuity journal, VisionClaw must build the continuation payload from host-owned normalized data rather than from another engine's raw transcript file.
+
+The continuation payload should be assembled from:
+
+- the latest continuity summary, if present
+- the recent unsynced journal tail
+- unresolved work state such as pending tool outcomes, active coding-task memo state, or unfinished owner requests
+- the current host-built system prompt for the target engine
+
+The target engine must always receive its own freshly rendered current system prompt. A previous engine's raw system prompt transcript must not be copied into the target engine's provider-native transcript as a surrogate for proper initialization.
+
+Behavioral continuity is required. Byte-identical provider transcript reuse is not.
+
 ### 10.2 OpenClaw embedded identity mapping
 
 For each VisionClaw mode:
@@ -478,6 +547,8 @@ providers/openclaw/
 
 These are artifacts, not authoritative session ownership.
 
+They are also not the canonical cross-engine continuity source. Provider-native transcripts may be resumed by the same engine that produced them, but must not be treated as a shared multi-engine transcript.
+
 ### 10.4 Explicit prohibition
 
 In VisionClaw embedded mode, OpenClaw Agent SDK must not write authoritative runtime state to:
@@ -492,6 +563,13 @@ If upstream OpenClaw code assumes those paths, the SDK extraction must replace t
 The SDK must not call upstream helpers such as default `resolveStateDir()` / `resolveOpenClawAgentDir()` / `ensureOpenClawAgentEnv()` in a way that can silently reintroduce `~/.openclaw` or default agent-directory fallback when the host already supplied explicit roots.
 
 The SDK must also not rely on ambient import-time environment snapshots for path ownership. In particular, embedded path resolution must not be derived from process-global `OPENCLAW_STATE_DIR` / `OPENCLAW_AGENT_DIR` constants captured during module import, because VisionClaw already uses `OPENCLAW_STATE_DIR` for other OpenClaw-adjacent vendor code at the profile root.
+
+The overall integration must also not implement cross-engine continuity by:
+
+- forcing Claude/OpenAI/OpenClaw to append into a single shared raw transcript file
+- background-mirroring one provider's native transcript/session file format into another provider's native format as the primary state-transfer mechanism
+
+Those approaches couple incompatible compaction, tool-call, and session-manager semantics and create unacceptable corruption and replay risk.
 
 ### 10.5 Host session persistence adapter
 
@@ -508,6 +586,8 @@ export interface OpenClawSessionStoreAdapter {
 VisionClaw will provide an adapter backed by its existing profile/session state instead of allowing OpenClaw internals to allocate their own store.
 
 `load()` / `save()` are host metadata persistence seams only. They do **not** replace Pi transcript/session-manager state.
+
+They also do **not** replace the host-owned continuity journal. The continuity journal is a separate VisionClaw concern above the provider adapter layer.
 
 `resolveSessionFile(identity)` is the mandatory Pi transcript/session-manager path seam for embedded mode.
 
