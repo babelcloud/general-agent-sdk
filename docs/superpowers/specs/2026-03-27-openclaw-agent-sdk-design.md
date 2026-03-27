@@ -107,16 +107,23 @@ The final system has three layers:
    - owns wake loop, owner/channel context, dual-session mailbox, canonical session persistence, top-level logs
 
 2. **OpenClaw Agent SDK**
-   - owns the extracted OpenClaw execution kernel: embedded runner, tool/plugin semantics, event normalization, provider-specific transcript/raw-event artifacts, and embedded-mode policy
+   - owns the extracted OpenClaw execution kernel and any supported compatibility adapters whose behavior is OpenClaw-specific: embedded runner, tool/plugin semantics, event normalization, provider-specific transcript/raw-event artifacts, and embedded-mode policy
 
 3. **Upstream OpenClaw source snapshot**
    - used as the reference source for extraction/sync, but not imported at runtime by VisionClaw
 
 ### 5.2 Core decision
 
-OpenClaw Agent SDK will be a **session-first extracted agent kernel**, not a repackaged gateway and not a second host-owned runtime platform.
+OpenClaw Agent SDK will be a **session-first extracted agent kernel** with a **thin host / thick adapter** steady-state integration shape, not a repackaged gateway and not a second host-owned runtime platform.
 
 The host-facing API is a session factory plus session objects. If the SDK needs one-time bootstrap for plugin registry, context-engine lifecycle, or provider/auth initialization, that bootstrap remains a private SDK implementation detail behind the factory boundary.
+
+The preferred end state is:
+
+- VisionClaw keeps only engine selection, config migration, lazy package loading, canonical session metadata, continuity journal/cursors, system-prompt construction, actual host-tool execution, and outer orchestration.
+- OpenClaw Agent SDK owns the OpenClaw-specific bridge logic required to make that integration work, preferably through an explicit compatibility surface such as `openclaw-agent-sdk/compat/visionclaw`.
+
+Bring-up may temporarily leave a larger `src/agent/providers/openclaw/*` surface in VisionClaw while the compatibility layer is extracted. That is acceptable only as an intermediate state. A large permanent host-side OpenClaw bridge is not the target architecture.
 
 The SDK will wrap and adapt the following OpenClaw subsystems:
 
@@ -146,6 +153,8 @@ The architecture must explicitly distinguish SDK work from environment work.
 - adapt OpenClaw model/provider/auth resolution for embedded execution
 - enforce embedded tool policy and plugin policy
 - emit host-rooted provider artifacts only
+- provide supported compatibility packages when the required adaptation is OpenClaw-specific rather than host-owned orchestration
+- preserve exact tool names and `callId` identity through all normalization layers
 
 **Environment-level responsibilities**
 
@@ -153,8 +162,31 @@ The architecture must explicitly distinguish SDK work from environment work.
 - credentials injection and environment variables
 - external MCP server definition and process launch
 - wake loop, owner/channel routing, dual-session mailbox, and canonical `session.json`
+- canonical continuity journal plus per-engine continuation cursors
+- current system-prompt rendering and prompt-policy decisions
+- actual host-tool implementations, authorization, and side effects
+- lazy loading and presence checks of the SDK package itself
 - OS/browser/desktop prerequisites
 - packaging, submodule wiring, SCM governance, and rollback
+
+Rule of thumb:
+
+- if a piece of logic exists because OpenClaw's stream/protocol semantics differ from the host, it belongs in the SDK compatibility layer
+- if a piece of logic touches host-owned state, routing, permissions, or package-loading policy, it stays in the host
+
+Concrete steady-state examples that remain in VisionClaw:
+
+- `src/agent/conversation-journal.ts`
+- continuation cursor storage in `src/config/index.ts`
+- actual `finish` / `switch_session` / `memory` / `manage_mcp_servers` tool handlers
+- the lazy SDK import gate (`sdk-loader.ts` or equivalent)
+
+Concrete steady-state examples that should converge into the SDK when they are OpenClaw-specific:
+
+- OpenClaw event normalization into host-compatible stream messages
+- OpenClaw session-wrapper behavior that is only translating between contracts
+- duplicated OpenClaw SDK event/type definitions in VisionClaw
+- hosted-tool protocol helpers that do not execute host tools themselves
 
 VisionClaw's existing `RuntimeSurface` remains an environment capability descriptor. It is not evidence that VisionClaw should adopt a second embedded agent runtime abstraction for OpenClaw.
 
@@ -192,6 +224,12 @@ openclaw_agent_sdk/
       events.ts
       host-tools.ts
       persistence.ts
+    compat/
+      visionclaw/
+        index.ts
+        session-adapter.ts
+        events.ts
+        types.ts
     core/
       embedded-runner/
       tools/
@@ -218,16 +256,22 @@ openclaw_agent_sdk/
 
 ### 6.1 Boundary rule
 
-- `src/public/*` is the only supported SDK surface.
+- `src/public/*` plus explicitly exported `src/compat/*` subpaths are the only supported SDK surfaces.
+- `src/compat/visionclaw/*` may encode VisionClaw-specific structural contracts, but it must not import VisionClaw source files directly.
 - `src/upstream/openclaw/*` contains only the extracted/adapted upstream subset required by the SDK and must not be imported directly by VisionClaw.
 - During the staged extraction phases, `src/upstream/openclaw/*` may be tracked for provenance while remaining outside the package compile graph until its dependency closure has been pulled behind SDK-owned wrappers. Provenance tracking is mandatory even when compile isolation is temporary.
 - Mirroring the full `/Users/apple/programme/funny_projects/openclaw` repository inside this SDK is explicitly forbidden.
 - Every extracted upstream file must have a provenance entry in `manifests/upstream-provenance.json`.
-- Every public export must be backed by contract tests.
+- Every public or compat export must be backed by contract tests.
 
 ## 7. Public SDK API
 
-The SDK public API must be generic and host-agnostic, but designed so VisionClaw can wrap it with minimal glue. The public surface is session-first. Any internal bootstrap state remains private to the SDK and does not become a new host architecture layer.
+The SDK public API has two layers:
+
+1. a generic, host-agnostic root package
+2. explicit host compatibility subpaths for supported hosts where the adaptation itself is OpenClaw-specific
+
+The public surface remains session-first. Any internal bootstrap state remains private to the SDK and does not become a new host architecture layer.
 
 ### 7.1 Top-level API
 
@@ -254,6 +298,27 @@ export function createOpenClawAgentSdk(
   options: OpenClawAgentSdkOptions,
 ): Promise<OpenClawAgentSdk>;
 ```
+
+### 7.1.1 VisionClaw compatibility subpath
+
+The preferred steady-state integration point for VisionClaw is an SDK-owned compatibility subpath:
+
+```ts
+openclaw-agent-sdk/compat/visionclaw
+```
+
+Minimum exports from that subpath:
+
+- a session-adapter factory that returns an object structurally compatible with VisionClaw's `AgentSessionLike`
+- event normalization helpers from `OpenClawStreamEvent` into the message/result/system shapes expected by `processAgentStream()`
+- hosted-tool suspend/resume helpers that preserve exact tool names, `callId`, and result ordering
+- prompt/content translation helpers where OpenClaw input/output block shapes differ from the host session contract
+
+Constraints:
+
+- this subpath must consume narrow host interfaces passed in from VisionClaw; it must not import VisionClaw repository source files directly
+- this subpath must not own canonical session state, continuity journal logic, or actual host-tool implementations
+- this subpath is allowed to be host-specific without turning the root SDK API into a second host runtime platform
 
 ### 7.2 Session API
 
@@ -302,7 +367,7 @@ export interface OpenClawAgentSession {
 
 ### 7.3 Event contract
 
-The SDK emits its own normalized stream event contract, then VisionClaw's provider adapter translates that 1:1 into `AgentStreamMessage`.
+The SDK emits its own normalized stream event contract. In the preferred end state, the official OpenClaw -> VisionClaw translation also lives in the SDK's `compat/visionclaw` surface, and VisionClaw only wires that adapter output into its existing host orchestration.
 
 This indirection is intentional. It keeps OpenClaw Agent SDK generic and makes VisionClaw-specific `finish`, `switch_session`, `TodoWrite`, and log semantics an adapter concern rather than a core SDK concern.
 
@@ -335,6 +400,9 @@ The following semantics are mandatory and must survive SDK normalization plus Vi
 - Every tool event carries a stable `callId`; `tool_result` / `tool_error` must reference the originating `callId`.
 - `hosted_tool_call` preserves a real suspend/resume boundary; VisionClaw must not auto-resume without an explicit result or error submission.
 - Event ordering within a turn must remain deterministic enough for transcript replay and duplicate-call detection.
+- Tool names must be preserved verbatim end-to-end. For example, if OpenClaw emits `exec`, the adapter must still surface `exec`, not a host alias.
+
+If a temporary host-local normalizer exists during bring-up, it must be treated as transitional scaffolding and collapse into the SDK compatibility layer, or a trivial re-export from it, before the architecture is considered complete.
 
 ## 8. Host Tool Model
 
@@ -703,9 +771,9 @@ Rationale:
 
 For this engine, `modelRef` is the only authoritative model selector.
 
-### 11.4 New VisionClaw provider files
+### 11.4 VisionClaw provider files and shrink rule
 
-Add:
+Bring-up form may temporarily add:
 
 ```text
 src/agent/providers/engine.ts
@@ -716,18 +784,35 @@ src/agent/providers/openclaw/
   event-normalizer.ts
   host-tools.ts
   persistence.ts
+  sdk-types.ts
 ```
 
-Responsibilities:
+Steady-state target in VisionClaw:
+
+```text
+src/agent/providers/engine.ts
+src/agent/providers/openclaw/
+  sdk-loader.ts
+  sdk-factory.ts
+  host-tools.ts
+  persistence.ts
+  session.ts        # optional thin delegating wrapper only
+```
+
+Target responsibilities:
 
 - `engine.ts`: central engine selection, runtime labeling, and config helpers; keep Claude/OpenAI client setup separate from OpenClaw runtime setup
-- `session.ts`: `OpenClawAgentSession implements AgentSessionLike`, including synchronous injection gating, hosted-tool continuation, tool-call identity preservation, prompt normalization, once-per-top-level-query host `system_prompt` audit emission, dynamic MCP server state, `getCurrentQuery()` bridging, and safe handling of accepted-but-undelivered injections when live interrupt support exists
-- `sdk-loader.ts`: the only host module allowed to dynamically import the SDK; caches the loaded module and guarantees no OpenClaw bootstrap work occurs unless the engine is selected
-- `sdk-loader.ts`: the only host module allowed to dynamically import the SDK; caches the loaded module, guarantees no OpenClaw bootstrap work occurs unless the engine is selected, and prevents ambient env-derived path constants from being snapshotted before embedded path adapters are established
-- `sdk-factory.ts`: minimal SDK factory singleton, process-global plugin prewarm/activation if required, state dir wiring, host-rooted `agentDir` injection, logger injection
-- `event-normalizer.ts`: OpenClaw SDK event -> `AgentStreamMessage`, including normalization of native and hosted tool activity into the `assistant.tool_use` / `user.tool_result` shapes that VisionClaw's existing `processAgentStream()` contract expects
-- `host-tools.ts`: VisionClaw hosted-tool definitions plus result/error resume helpers
-- `persistence.ts`: adapter between VisionClaw profile/session store and SDK persistence interface
+- `sdk-loader.ts`: the only host module allowed to dynamically import the SDK package; it stays host-owned because the host, not the SDK, decides whether the package is imported at all
+- `sdk-factory.ts`: thin host bootstrap wrapper that injects profile paths, host logger, session-store adapter, dynamic MCP state, and host tool executors into the SDK or the SDK's `compat/visionclaw` adapter
+- `host-tools.ts`: host-owned only for actual VisionClaw tool implementations, permission checks, and side effects; OpenClaw-specific hosted-tool protocol helpers should live in the SDK compatibility layer
+- `persistence.ts`: host-owned only for reading/writing `session.json`, continuity cursors, and profile-rooted provider artifact paths
+- `session.ts`, if it remains, must be a thin delegator to the SDK compatibility session adapter rather than the long-term home of OpenClaw stream/protocol logic
+
+Steady-state repatriation rules:
+
+- `event-normalizer.ts` and `sdk-types.ts` are bring-up scaffolding only and should disappear once the SDK exports `openclaw-agent-sdk/compat/visionclaw`
+- the bulk of OpenClaw-specific session bridging belongs in the SDK, not permanently in VisionClaw
+- any new OpenClaw-only bridge file added to VisionClaw must come with a clear repatriation path back into the SDK
 
 ### 11.5 Existing VisionClaw files to modify
 
@@ -740,6 +825,12 @@ Responsibilities:
 - `src/config/index.ts`
   - preserve legacy config auto-migration when `engine` is absent
   - stop reading top-level `model` / `provider` for the OpenClaw engine branch
+  - keep canonical session ids, continuity cursors, and host-owned session metadata outside the SDK
+
+- `src/agent/conversation-journal.ts`
+  - remains host-owned
+  - may grow engine hooks for OpenClaw event capture and system-prompt audit snapshots
+  - must not move into the SDK because it is the canonical cross-engine continuity layer
 
 - `src/agent/loop.ts`
   - asynchronously bootstrap the OpenClaw SDK factory before constructing `SessionManager`, but only when the selected engine is `openclaw-agent-sdk`
@@ -758,9 +849,13 @@ Responsibilities:
   - ensure OpenClaw receives rendered string prompts rather than the Claude `preset: "claude_code"` path
   - ensure non-selected engines do not import or initialize OpenClaw runtime code paths
 
+- `src/agent/providers/session-types.ts`
+  - remains the host-owned session contract
+  - the SDK may adapt to it structurally through `compat/visionclaw`, but must not take ownership of `SessionManager` itself
+
 - `src/agent/runtime-surface.ts`
   - decouple tool transport from `config.model === "gpt-5.4"`
-  - add a third `visionClawToolTransport.transport` kind: `openclaw-embedded`
+  - add a third `visionClawToolTransport.transport` kind: `openclaw-hosted`
   - define external MCP / dynamic-server semantics for the OpenClaw engine, including the possibility that live toggle is unsupported and changes apply on the next wake
   - keep `RuntimeSurface` explicitly environment-scoped rather than turning it into an OpenClaw host-runtime abstraction
 
@@ -933,20 +1028,24 @@ Exit criteria:
 Add:
 
 - `engine` config
-- OpenClaw provider backend in VisionClaw
-- event normalization bridge
+- lazy host loader plus thin bootstrap wrapper
+- initial OpenClaw provider backend in VisionClaw
+- SDK-owned `compat/visionclaw` bridge, or an explicitly temporary host bridge that is being repatriated into it
 - state/log/transcript path mapping
+- removal or collapse of duplicated OpenClaw event/type definitions in VisionClaw where the SDK can export them directly
 
 Exit criteria:
 
 - VisionClaw can run with `openclaw-agent-sdk`
 - canonical session ids remain stable
 - host log plus provider raw artifacts are both correct
+- remaining VisionClaw-side OpenClaw files are limited to host-owned responsibilities or thin wrappers around the SDK compatibility layer
 
 ### Phase 5: hardening and packaging
 
 Add:
 
+- final cleanup of any bring-up-only VisionClaw OpenClaw bridge code that should live in the SDK
 - submodule integration
 - packaged-distribution wiring for the built SDK
 - Node version and install checks
@@ -958,6 +1057,7 @@ Exit criteria:
 
 - submodule-based build is reproducible
 - fresh-install packaged VisionClaw artifact contains a usable OpenClaw SDK runtime
+- any remaining host-side OpenClaw bridge files are either clearly host-owned or trivial wrappers/re-exports from the SDK compatibility layer
 - VisionClaw host and GUI packaging are not broken
 
 ## 14. Development Process
@@ -987,6 +1087,7 @@ Required order:
 6. harden packaging/tests
 
 Do not start VisionClaw integration before the SDK can run standalone under tests.
+Before packaging hardening is considered complete, any bring-up-only host OpenClaw bridge code must either be repatriated into the SDK compatibility layer or be explicitly justified as host-owned.
 
 ### 14.3 Review gates
 
@@ -995,6 +1096,7 @@ After each phase:
 - run SDK unit/contract tests
 - run standalone embedded smoke
 - review path ownership
+- review whether any remaining VisionClaw-side OpenClaw bridge logic is still justified as host-owned
 - verify no forbidden writes outside host state dir
 - verify non-selected Claude/OpenAI engine paths still avoid OpenClaw bootstrap/import side effects
 - verify any referenced SDK SHA is reachable on the BabelCloud remote before updating the VisionClaw submodule pointer
@@ -1130,6 +1232,7 @@ Focus:
 
 - public API shape
 - exported subpaths
+- `compat/visionclaw` structural adapter surface
 - backward-compatible types
 - plugin-sdk compatibility exports
 - execution-event schema stability, especially `tool_call` and `hosted_tool_call`
@@ -1167,8 +1270,9 @@ Add or update host-side tests for:
 
 - engine selection and config validation
 - `SessionManager` engine dispatch
-- OpenClaw provider event normalization
+- `compat/visionclaw` adapter wiring, or an explicitly temporary host-normalization layer
 - session id persistence continuity
+- cross-engine continuity cursor advancement when switching into or out of the OpenClaw engine
 - `manage_mcp_servers` persisted add/remove/list behavior under the OpenClaw engine
 - logger mapping
 - interrupt handling behavior when the SDK can or cannot accept live injections
@@ -1273,6 +1377,7 @@ Mitigation:
 - session-first public SDK API
 - keep bootstrap/private kernel state behind the SDK factory only
 - keep VisionClaw `RuntimeSurface` environment-scoped
+- make thin host / thick adapter the explicit steady-state target so OpenClaw-specific bridge logic is repatriated into the SDK instead of accumulating in VisionClaw
 
 ### Risk 9: tool-call semantics are lost during normalization
 
@@ -1302,9 +1407,13 @@ This project is complete when all of the following are true:
 - the host-facing SDK contract remains session-first; VisionClaw does not gain a second top-level agent runtime platform abstraction.
 - OpenClaw Agent SDK can run a multi-turn session inside VisionClaw using the canonical VisionClaw session id.
 - No separate authoritative session registry is created by the SDK.
+- cross-engine continuity remains host-owned through the VisionClaw journal/cursor model, so switching engines during one logical conversation does not require manual restatement of recent context.
 - OpenClaw-specific transcripts/raw-event artifacts are written under the active VisionClaw profile.
 - OpenClaw tools/plugin runtime are preserved in embedded mode subject to explicit policy.
 - tool-call semantics are preserved end-to-end, including stable `callId` continuity and explicit hosted-tool suspend/resume.
+- tool names are preserved verbatim end-to-end, including names such as `exec`.
+- the steady-state VisionClaw diff is limited to engine selection/config, canonical session and continuity state, lazy SDK loading, host tool execution, and thin bootstrap glue.
+- permanent host-local OpenClaw event/type duplication is removed or reduced to trivial wrappers around the SDK compatibility surface.
 - Claude/OpenAI paths can still start and run without importing or initializing OpenClaw runtime when that engine is not selected.
 - every committed VisionClaw SDK bump points to an SDK SHA reachable from the BabelCloud remote and is revertable without force-push.
 - A fresh packaged VisionClaw install contains the SDK runtime and can boot the OpenClaw engine without workspace-only paths.
