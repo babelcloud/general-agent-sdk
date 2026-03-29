@@ -13,7 +13,7 @@ The primary host target is VisionClaw, where this SDK serves as a third executio
 - Module format: ESM
 - CI workflow: [`.github/workflows/sdk-ci.yml`](./.github/workflows/sdk-ci.yml)
 
-This repository is currently host-oriented and private by default. It is designed to be consumed as a pinned dependency or submodule by a parent host such as VisionClaw.
+This repository is currently host-oriented and public. It is designed to be consumed as a pinned dependency or submodule by a parent host such as VisionClaw.
 
 ## What This SDK Is
 
@@ -77,8 +77,22 @@ const sdk = await createOpenClawAgentSdk({
   sessionStore,
   hostedTools,
   env: process.env,
+
+  // Provider configuration (required for real agent execution)
+  providerConfig: {
+    provider: "anthropic",
+    apiKey: process.env.ANTHROPIC_API_KEY,
+  },
+
+  // Built-in tools (defaults to all: read, write, edit, exec, glob, grep)
+  builtinTools: ["read", "write", "edit", "exec", "glob", "grep"],
+
+  // Maximum agentic turns per streamTurn() call (default: 50)
+  maxTurns: 50,
 });
 ```
+
+When `providerConfig` is omitted, the SDK runs in **mock mode**: it acknowledges messages without making LLM calls. This is useful for testing the host integration.
 
 ### Session creation
 
@@ -139,6 +153,39 @@ for await (const event of session.submitHostedToolResult({
 
 The host is expected to normalize these events into its own runtime contract when necessary. VisionClaw, for example, adapts them into `AgentStreamMessage` values before applying its outer orchestration logic.
 
+## Agent Execution Engine
+
+When a `providerConfig` is provided, `streamTurn()` runs a real **agentic while-loop**:
+
+1. Send the conversation history + user message to the LLM (Anthropic Messages API)
+2. Stream the response — yield `assistant_delta`, `reasoning_delta` events in real time
+3. If the LLM calls tools (`tool_use` blocks):
+   - **Built-in tools** (read, write, edit, exec, glob, grep) are executed locally — results feed back into the conversation
+   - **Hosted tools** cause execution to suspend — the host must call `submitHostedToolResult()` to resume
+   - **Unknown tools** return an error result
+4. Loop back to step 1 with tool results until the LLM produces a final response (`end_turn`)
+
+The loop is bounded by `maxTurns` (default: 50) and respects `requestStop()` at each iteration.
+
+### Built-in Tools
+
+| Tool   | Description |
+|--------|-------------|
+| `read` | Read file contents with line numbers. Supports offset/limit for large files. |
+| `write`| Create or overwrite files. Parent directories are created automatically. |
+| `edit` | Exact string replacement in files. Supports `replace_all` for bulk renaming. |
+| `exec` | Execute shell commands with configurable timeout (default: 120s). |
+| `glob` | Find files matching glob patterns (`**/*.ts`). Results sorted by modification time. |
+| `grep` | Search file contents with regex. Uses ripgrep when available, falls back to grep. |
+
+### Provider Support
+
+Currently supported providers:
+
+- **Anthropic** — Uses the `@anthropic-ai/sdk` package. Supports streaming, tool use, and extended thinking.
+
+The provider is pluggable via the `LLMProvider` interface for custom integrations.
+
 ## Persistence Model
 
 The SDK does not own canonical session identity. Instead, the host provides a `sessionStore` adapter and resolves the session file path explicitly.
@@ -183,8 +230,18 @@ This makes the host's trust boundary explicit. The SDK can preserve OpenClaw's p
 ```text
 src/
   index.ts                  # top-level export surface
-  public/                   # supported public API
-  core/                     # SDK-owned runtime implementation
+  public/                   # supported public API (types, events, session, sdk)
+  core/
+    embedded-runner/        # session factory + agentic loop implementation
+    providers/              # LLM provider abstraction + Anthropic implementation
+    tools/
+      builtin/              # built-in tools (read, write, edit, exec, glob, grep)
+      tool-policy.ts        # embedded-mode tool allow/deny rules
+    normalization/          # event builders
+    logging/                # host logger sink
+    sessions/               # session store glue
+    plugins/                # plugin runtime
+  compat/visionclaw/        # VisionClaw adapter layer
   upstream/openclaw/        # extracted upstream subset only
 manifests/
   upstream-provenance.json  # machine-readable provenance map
@@ -194,7 +251,6 @@ scripts/
 tests/
   contract/
   integration/
-  unit/
 docs/
   superpowers/
     specs/
