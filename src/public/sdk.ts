@@ -25,7 +25,14 @@ export interface OpenClawAgentSdkOptions {
   hostedTools?: OpenClawHostedToolDefinition[];
   /** LLM provider configuration. Required for real agent execution. */
   providerConfig?: OpenClawProviderConfig;
-  /** Built-in tool names to enable. Defaults to all: read, write, edit, exec, glob, grep. */
+  /**
+   * Built-in tool names to enable. Defaults to all 21 tools:
+   * read, write, edit, exec, glob, grep, process,
+   * web_search, web_fetch, browser, canvas, message,
+   * agents_list, sessions_list, sessions_history, sessions_send,
+   * sessions_spawn, sessions_yield, subagents, session_status,
+   * memory_get, memory_search, tts.
+   */
   builtinTools?: string[];
   /** Maximum agentic turns per streamTurn() call before forcing end_turn. Defaults to 50. */
   maxTurns?: number;

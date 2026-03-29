@@ -502,7 +502,13 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
             message: tc.name,
             data: { callId: tc.id, toolName: tc.name, input: tc.input },
           });
-          const result = await builtin.execute(tc.input, { cwd: this.options.workspaceDir });
+          const result = await builtin.execute(tc.input, {
+            cwd: this.options.workspaceDir,
+            env: this.options.env,
+            sessionId: this.params.identity.sessionId,
+            stateDir: this.options.stateDir,
+            memoryDir: this.options.env?.MEMORY_DIR,
+          });
           const resultStr = result.content;
           await this.appendTranscript({
             type: "tool_result",
@@ -524,6 +530,13 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
             content: resultStr,
             is_error: result.isError,
           });
+
+          // sessions_yield → end the agentic loop
+          if (tc.name === "sessions_yield") {
+            this.conversationHistory.push({ role: "user", content: toolResults });
+            yield { kind: "turn_complete", stopReason: "yield" };
+            return;
+          }
         } else {
           const errMsg = `Unknown tool: ${tc.name}`;
           yield { kind: "tool_error", callId: tc.id, toolName: tc.name, error: errMsg };
