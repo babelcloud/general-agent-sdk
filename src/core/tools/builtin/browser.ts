@@ -159,11 +159,13 @@ export const browserTool: BuiltinTool = {
   async execute(input: Record<string, unknown>, ctx: BuiltinToolContext): Promise<BuiltinToolResult> {
     const action = input.action as string;
 
-    // Try to load Playwright dynamically — it's an optional peer dependency
+    // Try to load Playwright dynamically — it's an optional peer dependency.
+    // Use a variable for the module name to prevent TS from resolving the specifier.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let pw: any = null;
     try {
-      pw = await import("playwright");
+      const mod = "playwright";
+      pw = await import(/* webpackIgnore: true */ mod);
     } catch {
       // Playwright not installed
     }
