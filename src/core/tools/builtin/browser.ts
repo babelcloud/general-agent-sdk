@@ -3,9 +3,9 @@ import type { BuiltinTool, BuiltinToolContext, BuiltinToolResult } from "./types
 /**
  * Browser tool — controls a web browser via Playwright.
  *
- * In the SDK, this tool delegates to a Playwright instance if available.
- * The host can provide a browser connection via BROWSER_WS_ENDPOINT env var,
- * or Playwright will attempt to launch a local Chromium.
+ * Playwright is loaded dynamically at runtime. The host can provide a browser
+ * connection via BROWSER_WS_ENDPOINT env var, or Playwright will attempt to
+ * launch a local Chromium.
  */
 export const browserTool: BuiltinTool = {
   definition: {
@@ -159,8 +159,9 @@ export const browserTool: BuiltinTool = {
   async execute(input: Record<string, unknown>, ctx: BuiltinToolContext): Promise<BuiltinToolResult> {
     const action = input.action as string;
 
-    // Try to load Playwright dynamically
-    let pw: typeof import("playwright") | null = null;
+    // Try to load Playwright dynamically — it's an optional peer dependency
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let pw: any = null;
     try {
       pw = await import("playwright");
     } catch {
@@ -274,8 +275,10 @@ export const browserTool: BuiltinTool = {
 
         case "tabs": {
           await ensureBrowser(pw, ctx, state);
-          const pages = state.browser!.contexts().flatMap((c) => c.pages());
-          const tabs = pages.map((p, i) => ({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const pages = state.browser!.contexts().flatMap((c: any) => c.pages());
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const tabs = pages.map((p: any, i: number) => ({
             index: i,
             url: p.url(),
             title: p.url(), // title() is async, use url as fallback
@@ -307,8 +310,10 @@ export const browserTool: BuiltinTool = {
 // ---------------------------------------------------------------------------
 
 interface BrowserState {
-  browser: import("playwright").Browser | null;
-  page: import("playwright").Page | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  browser: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  page: any;
   consoleLogs: string[];
 }
 
@@ -322,7 +327,8 @@ function getBrowserState(): BrowserState {
 }
 
 async function ensureBrowser(
-  pw: typeof import("playwright"),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  pw: any,
   ctx: BuiltinToolContext,
   state: BrowserState,
 ): Promise<void> {
@@ -336,7 +342,8 @@ async function ensureBrowser(
     }
     const context = await state.browser.newContext();
     state.page = await context.newPage();
-    state.page.on("console", (msg) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    state.page.on("console", (msg: any) => {
       state.consoleLogs.push(`[${msg.type()}] ${msg.text()}`);
       if (state.consoleLogs.length > 200) state.consoleLogs.shift();
     });
@@ -344,7 +351,8 @@ async function ensureBrowser(
 }
 
 async function executeAction(
-  page: import("playwright").Page,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  page: any,
   input: Record<string, unknown>,
 ): Promise<BuiltinToolResult> {
   const kind = input.kind as string;
@@ -357,7 +365,7 @@ async function executeAction(
       const opts: Record<string, unknown> = {};
       if (input.button) opts.button = input.button;
       if (input.doubleClick) opts.clickCount = 2;
-      await page.click(ref, opts as Parameters<typeof page.click>[1]);
+      await page.click(ref, opts);
       return { content: JSON.stringify({ kind: "click", ref, done: true }) };
     }
 
@@ -393,14 +401,16 @@ async function executeAction(
 
     case "wait": {
       if (input.text) {
-        await page.waitForSelector(`text=${input.text}`, { timeout: input.timeoutMs as number ?? 30_000 });
+        await page.waitForSelector(`text=${input.text as string}`, {
+          timeout: (input.timeoutMs as number) ?? 30_000,
+        });
       } else if (input.textGone) {
-        await page.waitForSelector(`text=${input.textGone}`, {
+        await page.waitForSelector(`text=${input.textGone as string}`, {
           state: "hidden",
-          timeout: input.timeoutMs as number ?? 30_000,
+          timeout: (input.timeoutMs as number) ?? 30_000,
         });
       } else if (input.url) {
-        await page.waitForURL(input.url as string, { timeout: input.timeoutMs as number ?? 30_000 });
+        await page.waitForURL(input.url as string, { timeout: (input.timeoutMs as number) ?? 30_000 });
       }
       return { content: JSON.stringify({ kind: "wait", done: true }) };
     }
