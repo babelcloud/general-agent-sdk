@@ -77,7 +77,6 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
   private builtinTools: BuiltinTool[];
   private conversationHistory: ProviderMessage[] = [];
   private maxTurns: number;
-  private systemPromptLogged = false;
 
   constructor(
     private readonly options: OpenClawAgentSdkOptions,
@@ -127,10 +126,7 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
     );
     await this.ensureTranscriptPath();
 
-    if (!this.systemPromptLogged) {
-      await this.logSystemPrompt();
-      this.systemPromptLogged = true;
-    }
+    await this.logSystemPrompt();
 
     this.loggerSink.emitRaw({
       type: "query_started",
