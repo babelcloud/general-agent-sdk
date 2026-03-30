@@ -120,10 +120,35 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
       return;
     }
 
-    // Get API key
-    const apiKey = this.params.anthropicApiKey ?? this.options.anthropicApiKey ?? process.env.ANTHROPIC_API_KEY;
+    // Get API key — only use env var if explicitly opted in via options
+    const apiKey = this.params.anthropicApiKey ?? this.options.anthropicApiKey;
     if (!apiKey) {
       // Fallback to stub behavior for backwards compatibility
+      // Check for hosted tool by keyword matching
+      const hostedTool = this.resolveHostedTool(input);
+      if (hostedTool) {
+        const pending: PendingHostedToolCall = {
+          callId: randomUUID(),
+          toolName: hostedTool.name,
+          input: {},
+        };
+        this.pendingHostedTool = pending;
+        await this.appendTranscript({
+          type: "tool_call",
+          callId: pending.callId,
+          toolName: pending.toolName,
+          input: pending.input,
+          timestamp: Date.now(),
+        });
+        this.loggerSink.emitInfo({
+          category: "tool_call",
+          message: pending.toolName,
+          data: { callId: pending.callId, toolName: pending.toolName, sessionId: this.params.identity.sessionId },
+        });
+        yield* this.emitEvents(createHostedToolSuspendEvents(pending));
+        return;
+      }
+
       const text = this.extractText(input);
       const reply = text ? `Acknowledged: ${text}` : "Acknowledged.";
       await this.appendTranscript({ type: "assistant", text: reply, timestamp: Date.now() });
