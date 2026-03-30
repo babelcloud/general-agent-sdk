@@ -31,6 +31,7 @@ export interface OpenClawSessionParams {
   sessionFile: string;
   authProfileId?: string;
   rawEventLogPath?: string;
+  anthropicApiKey?: string;
 }
 
 export interface OpenClawTurnInput {

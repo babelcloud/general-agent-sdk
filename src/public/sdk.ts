@@ -15,6 +15,7 @@ export interface OpenClawAgentSdkOptions {
   sessionStore: OpenClawSessionStoreAdapter;
   hostedTools?: OpenClawHostedToolDefinition[];
   env?: Record<string, string | undefined>;
+  anthropicApiKey?: string;
 }
 
 export interface OpenClawAgentSdk {
