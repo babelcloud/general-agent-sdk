@@ -1,20 +1,13 @@
 import type { OpenClawTool } from "../tool-interface.js";
-import { textResult, failedTextResult } from "../shared/tool-result.js";
+import { failedTextResult } from "../shared/tool-result.js";
 import { browserSchema, type BrowserInput } from "./browser-schema.js";
 
 /**
  * Create a browser tool (host mode only).
  * Requires Playwright as an optional peer dependency.
- * Returns null if Playwright is not available.
+ * Playwright availability is checked at execution time via dynamic import.
  */
-export function createBrowserTool(): OpenClawTool | null {
-	// Check if Playwright is available
-	try {
-		require.resolve("playwright");
-	} catch {
-		return null;
-	}
-
+export function createBrowserTool(): OpenClawTool {
 	return {
 		name: "browser",
 		description:
@@ -23,7 +16,16 @@ export function createBrowserTool(): OpenClawTool | null {
 		async execute(callId, params) {
 			const input = browserSchema.parse(params) as BrowserInput;
 
-			// Browser tool stub — full implementation requires browser lifecycle management
+			try {
+				// Dynamic import — works in ESM, throws if playwright not installed
+				await import("playwright" as string);
+			} catch {
+				return failedTextResult(
+					"Browser tool requires the 'playwright' package. Install it with: pnpm add playwright",
+				);
+			}
+
+			// Stub — full implementation requires browser lifecycle management
 			return failedTextResult(
 				"Browser tool is available but not yet fully implemented. " +
 				"Action requested: " + input.action,

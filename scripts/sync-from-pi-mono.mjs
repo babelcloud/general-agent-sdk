@@ -2,7 +2,12 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const PI_MONO_ROOT = "/Users/apple/programme/funny_projects/pi-mono";
+const PI_MONO_ROOT = process.env.PI_MONO_ROOT || process.argv[2];
+if (!PI_MONO_ROOT) {
+  console.error("Usage: PI_MONO_ROOT=/path/to/pi-mono node scripts/sync-from-pi-mono.mjs");
+  console.error("   or: node scripts/sync-from-pi-mono.mjs /path/to/pi-mono");
+  process.exit(1);
+}
 const MANIFEST_PATH = "manifests/pi-mono-provenance.json";
 
 // File map: source (relative to PI_MONO_ROOT) -> destination (relative to repo root)
