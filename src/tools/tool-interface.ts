@@ -1,0 +1,39 @@
+import type { Tool } from "@anthropic-ai/sdk/resources/messages.js";
+import { z } from "zod";
+
+/**
+ * Result returned by tool execution.
+ * Content array matches Anthropic's ToolResultBlockParam content format.
+ */
+export interface OpenClawToolResult {
+  content: Array<
+    | { type: "text"; text: string }
+    | { type: "image"; source: { type: "base64"; media_type: string; data: string } }
+  >;
+}
+
+/**
+ * SDK-native tool definition. All vendored tools implement this interface.
+ * Parameters use Zod schemas (not TypeBox).
+ */
+export interface OpenClawTool {
+  name: string;
+  description: string;
+  parameters: z.ZodType<any>;
+  execute(
+    callId: string,
+    params: unknown,
+    signal?: AbortSignal,
+  ): Promise<OpenClawToolResult>;
+}
+
+/**
+ * Convert an SDK tool to the Anthropic API tool definition format.
+ */
+export function toAnthropicToolDef(tool: OpenClawTool): Tool {
+  return {
+    name: tool.name,
+    description: tool.description,
+    input_schema: z.toJSONSchema(tool.parameters) as Tool["input_schema"],
+  };
+}
