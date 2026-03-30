@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import Anthropic from "@anthropic-ai/sdk";
 import type { OpenClawStreamEvent } from "../../public/events.js";
 import type {
   OpenClawHostedToolDefinition,
@@ -27,9 +26,14 @@ import {
 import { HostLoggerSink } from "../logging/host-logger.js";
 import { resolveHostSessionFile } from "../sessions/session-store.js";
 import { isToolAllowedInEmbeddedMode } from "../tools/tool-policy.js";
-import type { OpenClawTool } from "../../tools/tool-interface.js";
-import { toAnthropicToolDef } from "../../tools/tool-interface.js";
 import { assembleLocalTools } from "../../tools/tool-assembly.js";
+import type { OpenClawTool } from "../../tools/tool-interface.js";
+import type { AgentContext, AgentTool, AgentEvent, AgentMessage } from "../../loop/agent-types.js";
+import { agentLoop } from "../../loop/agent-loop.js";
+import type { Message, UserMessage } from "../../providers/anthropic-types.js";
+import { adaptAgentEventToStreamEvents } from "./agent-event-adapter.js";
+import { HostedToolBridge } from "./hosted-tool-bridge.js";
+import { modelFromRef } from "./model-from-ref.js";
 
 type PendingHostedToolCall = {
   callId: string;
@@ -67,11 +71,14 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
   private transcriptPath: string | null;
   private pendingHostedTool: PendingHostedToolCall | null = null;
   private stopRequested = false;
+  private abortController: AbortController | null = null;
   private currentQuery: OpenClawCurrentQueryLike | null = null;
   private lastCompactionAt = 0;
   private loggerSink: HostLoggerSink;
   private readonly localTools: OpenClawTool[];
-  private readonly conversationHistory: Array<{ role: string; content: any }> = [];
+  private readonly hostedToolBridge = new HostedToolBridge();
+  // Persistent agent context across turns (for the vendored loop)
+  private agentMessages: AgentMessage[] = [];
 
   constructor(
     private readonly options: OpenClawAgentSdkOptions,
@@ -120,11 +127,10 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
       return;
     }
 
-    // Get API key — only use env var if explicitly opted in via options
+    // Get API key — only use explicitly configured keys
     const apiKey = this.params.anthropicApiKey ?? this.options.anthropicApiKey;
     if (!apiKey) {
       // Fallback to stub behavior for backwards compatibility
-      // Check for hosted tool by keyword matching
       const hostedTool = this.resolveHostedTool(input);
       if (hostedTool) {
         const pending: PendingHostedToolCall = {
@@ -156,29 +162,8 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
       return;
     }
 
-    // Build Anthropic messages from input
-    this.conversationHistory.push({
-      role: "user",
-      content: this.buildAnthropicUserContent(input),
-    });
-
-    // Build tools list for Anthropic
-    const anthropicTools = this.localTools.map(toAnthropicToolDef);
-    for (const hostedTool of this.hostedTools) {
-      if (isToolAllowedInEmbeddedMode(hostedTool.name)) {
-        anthropicTools.push({
-          name: hostedTool.name,
-          description: hostedTool.description ?? `Hosted tool: ${hostedTool.name}`,
-          input_schema: (hostedTool.inputSchema ?? { type: "object", properties: {} }) as any,
-        });
-      }
-    }
-
-    // Create Anthropic client
-    const client = new Anthropic({ apiKey });
-
-    // Agentic loop: call Anthropic, execute local tools, loop
-    yield* this.runAgenticLoop(client, anthropicTools);
+    // --- Real Anthropic path using vendored agent loop ---
+    yield* this.runWithVendoredLoop(input, apiKey);
   }
 
   injectMessage(_input: OpenClawTurnInput): boolean {
@@ -208,6 +193,12 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
       },
     });
     this.pendingHostedTool = null;
+
+    // If the bridge has a pending call, resolve it so the loop continues
+    if (this.hostedToolBridge.hasPending()) {
+      this.hostedToolBridge.submitResult(input.callId, input.output);
+    }
+
     yield* this.emitEvents(
       createHostedToolResumeEvents({
         callId: input.callId,
@@ -241,6 +232,11 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
       },
     });
     this.pendingHostedTool = null;
+
+    if (this.hostedToolBridge.hasPending()) {
+      this.hostedToolBridge.submitError(input.callId, input.error);
+    }
+
     yield* this.emitEvents(
       createHostedToolResumeEvents({
         callId: input.callId,
@@ -253,6 +249,7 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
 
   requestStop(): void {
     this.stopRequested = true;
+    this.abortController?.abort();
   }
 
   clearStop(): void {
@@ -269,10 +266,7 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
 
   async maybeCompactByTokens(options?: OpenClawCompactionOptions): Promise<void> {
     const snapshot = this.usageSnapshot;
-    if (!snapshot) {
-      return;
-    }
-
+    if (!snapshot) return;
     const threshold = options?.usedPctThreshold ?? 85;
     const cooldownMs = options?.cooldownMs ?? 60_000;
     const now = Date.now();
@@ -310,18 +304,204 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
 
   closeInput(): void {}
 
-  private async restoreStoredState(): Promise<void> {
-    const stored = await this.sessionStore.load(this.params.identity);
-    if (!stored) {
-      return;
+  // --- Vendored loop integration ---
+
+  private async *runWithVendoredLoop(
+    input: OpenClawTurnInput,
+    apiKey: string,
+  ): AsyncIterable<OpenClawStreamEvent> {
+    const model = modelFromRef(this.params.modelRef);
+
+    // Build agent tools: local tools (wrapped) + hosted tools (bridged)
+    const agentTools: AgentTool[] = [];
+
+    for (const localTool of this.localTools) {
+      agentTools.push(this.wrapLocalToolAsAgentTool(localTool));
     }
 
-    if (stored.transcriptPath) {
-      this.transcriptPath = stored.transcriptPath;
+    for (const hostedTool of this.hostedTools) {
+      if (isToolAllowedInEmbeddedMode(hostedTool.name)) {
+        agentTools.push(this.hostedToolBridge.createAgentTool(hostedTool));
+      }
     }
-    if (stored.usageSnapshot) {
-      this.usageSnapshot = stored.usageSnapshot;
+
+    // Build user message
+    const userMessage: UserMessage = {
+      role: "user",
+      content: this.buildUserContent(input),
+      timestamp: Date.now(),
+    };
+
+    // Build agent context
+    const context: AgentContext = {
+      systemPrompt: this.params.systemPrompt,
+      messages: this.agentMessages,
+      tools: agentTools,
+    };
+
+    // Create abort controller for signal propagation
+    this.abortController = new AbortController();
+    if (this.stopRequested) {
+      this.abortController.abort();
     }
+
+    // Run the vendored loop
+    const eventStream = agentLoop(
+      [userMessage],
+      context,
+      {
+        model,
+        apiKey,
+        convertToLlm: (messages: AgentMessage[]) => messages as Message[],
+        reasoning: model.reasoning ? "high" : undefined,
+      },
+      this.abortController.signal,
+    );
+
+    // Iterate events, translate, and yield
+    let hostedToolSuspended = false;
+    for await (const event of eventStream) {
+      // Transcript logging for specific events
+      if (event.type === "tool_execution_start") {
+        await this.appendTranscript({
+          type: "tool_call",
+          callId: event.toolCallId,
+          toolName: event.toolName,
+          input: event.args ?? {},
+          timestamp: Date.now(),
+        });
+      }
+      if (event.type === "tool_execution_end") {
+        await this.appendTranscript({
+          type: "tool_result",
+          callId: event.toolCallId,
+          toolName: event.toolName,
+          output: event.result?.content ?? [],
+          isError: event.isError,
+          timestamp: Date.now(),
+        });
+      }
+      if (event.type === "message_end") {
+        const msg = event.message;
+        if (msg && "role" in msg && msg.role === "assistant" && "content" in msg) {
+          const textContent = (msg as any).content
+            ?.filter((c: any) => c.type === "text")
+            ?.map((c: any) => c.text)
+            ?.join("\n") ?? "";
+          if (textContent) {
+            await this.appendTranscript({
+              type: "assistant",
+              text: textContent,
+              timestamp: Date.now(),
+            });
+          }
+          // Update usage from assistant message
+          if ("usage" in msg && (msg as any).usage) {
+            const usage = (msg as any).usage;
+            this.usageSnapshot = {
+              usedInputTokens: usage.input ?? 0,
+              contextWindow: 200_000,
+              usedPct: Number((((usage.input ?? 0) / 200_000) * 100).toFixed(4)),
+              capturedAtMs: Date.now(),
+            };
+          }
+        }
+      }
+
+      // Check if a hosted tool was just called (bridge has a pending call)
+      if (event.type === "tool_execution_start" && this.hostedToolBridge.hasPending()) {
+        // The bridge's execute() is now blocking the loop.
+        // We need to suspend and let the host provide the result.
+        const pending = this.hostedToolBridge.getPending()!;
+        this.pendingHostedTool = {
+          callId: pending.callId,
+          toolName: pending.toolName,
+          input: pending.input,
+        };
+        yield* this.emitEvents(createHostedToolSuspendEvents(this.pendingHostedTool));
+        hostedToolSuspended = true;
+        // Don't return — the loop is blocked on the bridge promise.
+        // When submitHostedToolResult is called, it resolves the promise,
+        // and the loop will continue producing events.
+        // But we can't yield from this generator anymore after returning...
+        // So we need to break and let the host resume via submitHostedToolResult.
+        break;
+      }
+
+      // Translate and emit
+      const streamEvents = adaptAgentEventToStreamEvents(event);
+      for (const streamEvent of streamEvents) {
+        this.loggerSink.emitRaw(streamEvent as Record<string, unknown>);
+        yield streamEvent;
+      }
+    }
+
+    if (!hostedToolSuspended) {
+      // Save updated messages from the loop context
+      this.agentMessages = context.messages;
+    }
+
+    this.abortController = null;
+  }
+
+  /**
+   * Wrap an OpenClawTool as an AgentTool for the vendored loop.
+   */
+  private wrapLocalToolAsAgentTool(tool: OpenClawTool): AgentTool {
+    return {
+      name: tool.name,
+      label: tool.name,
+      description: tool.description,
+      parameters: tool.parameters,
+      execute: async (toolCallId: string, params: any, signal?: AbortSignal) => {
+        const result = await tool.execute(toolCallId, params, signal);
+        // Convert OpenClawToolResult → AgentToolResult
+        return {
+          content: result.content.map((c) => {
+            if (c.type === "text") return { type: "text" as const, text: c.text };
+            if (c.type === "image") {
+              return {
+                type: "image" as const,
+                data: c.source.data,
+                mimeType: c.source.media_type,
+              };
+            }
+            return c as any;
+          }),
+          details: {},
+        };
+      },
+    };
+  }
+
+  private buildUserContent(input: OpenClawTurnInput): string | Array<any> {
+    const textParts = input.content.filter((c) => c.type === "text") as Array<{ type: "text"; text: string }>;
+    const imageParts = input.content.filter((c) => c.type === "image");
+
+    if (imageParts.length === 0) {
+      return textParts.map((p) => p.text).join("\n");
+    }
+
+    return input.content.map((part) => {
+      if (part.type === "text") return { type: "text", text: part.text };
+      if (part.type === "image") {
+        return {
+          type: "image",
+          data: (part as any).data,
+          mimeType: (part as any).mimeType,
+        };
+      }
+      return part;
+    });
+  }
+
+  // --- Preserved utility methods ---
+
+  private async restoreStoredState(): Promise<void> {
+    const stored = await this.sessionStore.load(this.params.identity);
+    if (!stored) return;
+    if (stored.transcriptPath) this.transcriptPath = stored.transcriptPath;
+    if (stored.usageSnapshot) this.usageSnapshot = stored.usageSnapshot;
   }
 
   private async logSystemPrompt(): Promise<void> {
@@ -349,17 +529,11 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
         this.loggerSink.emitWarn({
           category: "system",
           message: `blocked embedded tool: ${tool.name}`,
-          data: {
-            toolName: tool.name,
-            sessionId: this.params.identity.sessionId,
-          },
+          data: { toolName: tool.name, sessionId: this.params.identity.sessionId },
         });
         continue;
       }
-
-      if (text.includes(tool.name.toLowerCase())) {
-        return tool;
-      }
+      if (text.includes(tool.name.toLowerCase())) return tool;
     }
     return null;
   }
@@ -418,226 +592,5 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
       this.loggerSink.emitRaw(event as Record<string, unknown>);
       yield event;
     }
-  }
-
-  private buildAnthropicUserContent(input: OpenClawTurnInput): string | Array<any> {
-    const textParts = input.content.filter((c) => c.type === "text") as Array<{ type: "text"; text: string }>;
-    const imageParts = input.content.filter((c) => c.type === "image");
-
-    if (imageParts.length === 0) {
-      return textParts.map((p) => p.text).join("\n");
-    }
-
-    const blocks: any[] = [];
-    for (const part of input.content) {
-      if (part.type === "text") {
-        blocks.push({ type: "text", text: part.text });
-      } else if (part.type === "image") {
-        blocks.push({
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: part.mimeType,
-            data: part.data,
-          },
-        });
-      }
-    }
-    return blocks;
-  }
-
-  private async *runAgenticLoop(
-    client: Anthropic,
-    anthropicTools: Anthropic.Messages.Tool[],
-  ): AsyncIterable<OpenClawStreamEvent> {
-    const maxTurns = 50;
-    let turn = 0;
-
-    while (turn < maxTurns) {
-      turn++;
-
-      if (this.stopRequested) {
-        yield* this.emitEvents(createStopEvents("stop_requested"));
-        return;
-      }
-
-      // Call Anthropic API
-      let response: Anthropic.Messages.Message;
-      try {
-        response = await client.messages.create({
-          model: this.params.modelRef,
-          max_tokens: 16384,
-          system: this.params.systemPrompt,
-          messages: this.conversationHistory as any,
-          tools: anthropicTools.length > 0 ? anthropicTools : undefined,
-        });
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        yield* this.emitEvents(createAssistantCompletionEvents({
-          text: `Error calling Anthropic API: ${errMsg}`,
-          snapshot: this.usageSnapshot,
-        }));
-        return;
-      }
-
-      // Update usage
-      this.usageSnapshot = {
-        usedInputTokens: response.usage.input_tokens,
-        contextWindow: 200_000,
-        usedPct: Number(((response.usage.input_tokens / 200_000) * 100).toFixed(4)),
-        capturedAtMs: Date.now(),
-      };
-
-      // Process response content
-      const assistantContent: any[] = [];
-      let textParts: string[] = [];
-      const toolCalls: Array<{ id: string; name: string; input: Record<string, unknown> }> = [];
-
-      for (const block of response.content) {
-        if (block.type === "text") {
-          textParts.push(block.text);
-          assistantContent.push(block);
-        } else if (block.type === "tool_use") {
-          toolCalls.push({ id: block.id, name: block.name, input: block.input as Record<string, unknown> });
-          assistantContent.push(block);
-        }
-      }
-
-      // Add assistant message to history
-      this.conversationHistory.push({
-        role: "assistant",
-        content: assistantContent,
-      });
-
-      // Emit text if present
-      const fullText = textParts.join("\n");
-      if (fullText && toolCalls.length === 0) {
-        await this.appendTranscript({ type: "assistant", text: fullText, timestamp: Date.now() });
-        yield* this.emitEvents(createAssistantCompletionEvents({
-          text: fullText,
-          snapshot: this.usageSnapshot,
-        }));
-        return;
-      }
-
-      if (fullText) {
-        await this.appendTranscript({ type: "assistant", text: fullText, timestamp: Date.now() });
-      }
-
-      if (toolCalls.length === 0) {
-        // No text and no tool calls — done
-        yield* this.emitEvents(createAssistantCompletionEvents({
-          text: fullText || "(empty response)",
-          snapshot: this.usageSnapshot,
-        }));
-        return;
-      }
-
-      // Process tool calls
-      const toolResultContents: any[] = [];
-      for (const tc of toolCalls) {
-        await this.appendTranscript({
-          type: "tool_call",
-          callId: tc.id,
-          toolName: tc.name,
-          input: tc.input,
-          timestamp: Date.now(),
-        });
-
-        // Check if this is a hosted tool
-        const hostedTool = this.hostedTools.find(
-          (ht) => ht.name === tc.name && isToolAllowedInEmbeddedMode(ht.name),
-        );
-        if (hostedTool) {
-          // Suspend for hosted tool
-          this.pendingHostedTool = {
-            callId: tc.id,
-            toolName: tc.name,
-            input: tc.input,
-          };
-          this.loggerSink.emitInfo({
-            category: "tool_call",
-            message: tc.name,
-            data: { callId: tc.id, toolName: tc.name, sessionId: this.params.identity.sessionId },
-          });
-          yield* this.emitEvents(createHostedToolSuspendEvents(this.pendingHostedTool));
-          return; // Suspend — host will call submitHostedToolResult to resume
-        }
-
-        // Execute local tool
-        const localTool = this.localTools.find((t) => t.name === tc.name);
-        if (localTool) {
-          this.loggerSink.emitInfo({
-            category: "tool_call",
-            message: tc.name,
-            data: { callId: tc.id, toolName: tc.name, input: tc.input },
-          });
-
-          try {
-            const result = await localTool.execute(tc.id, tc.input);
-            const resultContent = result.content.map((c) => {
-              if (c.type === "text") return { type: "text" as const, text: c.text };
-              if (c.type === "image") {
-                return {
-                  type: "image" as const,
-                  source: c.source,
-                };
-              }
-              return c;
-            });
-
-            await this.appendTranscript({
-              type: "tool_result",
-              callId: tc.id,
-              toolName: tc.name,
-              output: resultContent,
-              timestamp: Date.now(),
-            });
-
-            toolResultContents.push({
-              type: "tool_result",
-              tool_use_id: tc.id,
-              content: resultContent,
-            });
-          } catch (err) {
-            const errMsg = err instanceof Error ? err.message : String(err);
-            await this.appendTranscript({
-              type: "tool_result",
-              callId: tc.id,
-              toolName: tc.name,
-              output: errMsg,
-              isError: true,
-              timestamp: Date.now(),
-            });
-            toolResultContents.push({
-              type: "tool_result",
-              tool_use_id: tc.id,
-              content: errMsg,
-              is_error: true,
-            });
-          }
-        } else {
-          // Unknown tool
-          toolResultContents.push({
-            type: "tool_result",
-            tool_use_id: tc.id,
-            content: `Error: Unknown tool: ${tc.name}`,
-            is_error: true,
-          });
-        }
-      }
-
-      // Add tool results to conversation and loop
-      this.conversationHistory.push({
-        role: "user",
-        content: toolResultContents,
-      });
-    }
-
-    // Max turns exceeded
-    yield* this.emitEvents(createAssistantCompletionEvents({
-      text: "[Max turns exceeded]",
-      snapshot: this.usageSnapshot,
-    }));
   }
 }
