@@ -8,169 +8,127 @@
       "upstream": "packages/coding-agent/src/core/tools/read.ts",
       "destination": "src/tools/file/read.ts",
       "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "adaptations": ["TypeBox→Zod, stripped TUI rendering, replaced AgentTool with OpenClawTool"]
     },
     {
       "upstream": "packages/coding-agent/src/core/tools/write.ts",
       "destination": "src/tools/file/write.ts",
       "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "adaptations": ["TypeBox→Zod, stripped TUI rendering, replaced AgentTool with OpenClawTool"]
     },
     {
       "upstream": "packages/coding-agent/src/core/tools/edit.ts",
       "destination": "src/tools/file/edit.ts",
       "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "adaptations": ["TypeBox→Zod, stripped TUI rendering, replaced AgentTool with OpenClawTool"]
     },
     {
       "upstream": "packages/coding-agent/src/core/tools/edit-diff.ts",
       "destination": "src/tools/file/edit-diff.ts",
       "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "adaptations": ["Fixed import path for path-utils"]
     },
     {
       "upstream": "packages/coding-agent/src/core/tools/bash.ts",
       "destination": "src/tools/exec/exec.ts",
       "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "adaptations": ["TypeBox→Zod, stripped TUI, renamed bash→exec, added background/yield from openclaw"]
     },
     {
       "upstream": "packages/coding-agent/src/core/tools/truncate.ts",
       "destination": "src/tools/shared/truncate.ts",
-      "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "mode": "copied",
+      "adaptations": ["No changes needed"]
     },
     {
       "upstream": "packages/coding-agent/src/core/tools/path-utils.ts",
       "destination": "src/tools/shared/path-utils.ts",
-      "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "mode": "copied",
+      "adaptations": ["No changes needed"]
     },
     {
       "upstream": "packages/coding-agent/src/core/tools/file-mutation-queue.ts",
       "destination": "src/tools/shared/file-mutation-queue.ts",
-      "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "mode": "copied",
+      "adaptations": ["No changes needed"]
     },
     {
       "upstream": "packages/coding-agent/src/utils/shell.ts",
       "destination": "src/tools/shared/shell.ts",
       "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "adaptations": ["Replaced SettingsManager/getBinDir with SHELL env var and defaults"]
     },
     {
       "upstream": "packages/coding-agent/src/utils/child-process.ts",
       "destination": "src/tools/shared/child-process.ts",
-      "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "mode": "copied",
+      "adaptations": ["No changes needed"]
     },
     {
       "upstream": "packages/coding-agent/src/utils/mime.ts",
       "destination": "src/tools/shared/mime.ts",
       "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "adaptations": ["Replaced file-type npm dep with inline magic byte detection"]
     },
     {
       "upstream": "packages/agent/src/agent-loop.ts",
       "destination": "src/loop/agent-loop.ts",
       "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "adaptations": ["Replaced @mariozechner/pi-ai imports with local providers, added inline validateToolArguments"]
     },
     {
       "upstream": "packages/agent/src/types.ts",
       "destination": "src/loop/agent-types.ts",
       "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "adaptations": ["Replaced @mariozechner/pi-ai imports, replaced TSchema with any"]
     },
     {
       "upstream": "packages/ai/src/providers/anthropic.ts",
       "destination": "src/providers/anthropic.ts",
       "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "adaptations": ["Removed stealth mode, OAuth/Claude Code identity, GitHub Copilot, fixed imports"]
     },
     {
       "upstream": "packages/ai/src/providers/simple-options.ts",
       "destination": "src/providers/simple-options.ts",
       "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "adaptations": ["Fixed import path to anthropic-types.js"]
     },
     {
       "upstream": "packages/ai/src/providers/transform-messages.ts",
       "destination": "src/providers/transform-messages.ts",
       "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "adaptations": ["Fixed import path to anthropic-types.js"]
     },
     {
       "upstream": "packages/ai/src/utils/event-stream.ts",
       "destination": "src/providers/event-stream.ts",
       "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "adaptations": ["Fixed import path to anthropic-types.js"]
     },
     {
       "upstream": "packages/ai/src/utils/json-parse.ts",
       "destination": "src/providers/json-parse.ts",
-      "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "mode": "copied",
+      "adaptations": ["No changes needed"]
     },
     {
       "upstream": "packages/ai/src/utils/sanitize-unicode.ts",
       "destination": "src/providers/sanitize-unicode.ts",
-      "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "mode": "copied",
+      "adaptations": ["No changes needed"]
     },
     {
       "upstream": "packages/ai/src/types.ts",
       "destination": "src/providers/anthropic-types.ts",
       "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "adaptations": ["Removed non-Anthropic providers/APIs, removed TypeBox dependency, removed compat types"]
     },
     {
       "upstream": "packages/ai/src/env-api-keys.ts",
       "destination": "src/providers/env-api-keys.ts",
       "mode": "adapted",
-      "adaptations": [
-        "pending — see task-specific commits"
-      ]
+      "adaptations": ["Simplified to Anthropic-only (removed all other provider key lookups)"]
     }
   ]
 }
