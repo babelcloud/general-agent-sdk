@@ -65,12 +65,29 @@ export const sessionsSpawnTool: BuiltinTool = {
           type: "string",
           description: '"parent" to stream output to parent.',
         },
+        thinking: {
+          type: "string",
+          description: "Thinking mode for the sub-agent.",
+        },
         attachments: {
           type: "array",
           items: {
             type: "object",
+            properties: {
+              name: { type: "string" },
+              content: { type: "string" },
+              encoding: { type: "string", description: '"utf8" or "base64".' },
+              mimeType: { type: "string" },
+            },
           },
-          description: "Files to attach to the spawned session.",
+          description: "Files to attach to the spawned session (max 50).",
+        },
+        attachAs: {
+          type: "object",
+          properties: {
+            mountPath: { type: "string", description: "Mount path for attachments." },
+          },
+          description: "How to attach files to the session.",
         },
         resumeSessionId: {
           type: "string",

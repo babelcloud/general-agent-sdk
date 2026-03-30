@@ -72,6 +72,10 @@ export const messageTool: BuiltinTool = {
           type: "boolean",
           description: "Send as document (avoid compression).",
         },
+        asDocument: {
+          type: "boolean",
+          description: "Send as document (alias for forceDocument).",
+        },
         interactive: {
           type: "object",
           description: "Interactive message payload with buttons/selects.",
@@ -80,17 +84,147 @@ export const messageTool: BuiltinTool = {
           type: "boolean",
           description: "Simulate without actually sending.",
         },
+        targets: {
+          type: "array",
+          items: { type: "string" },
+          description: "Multiple targets for broadcast.",
+        },
+        accountId: {
+          type: "string",
+          description: "Account ID for multi-account channels.",
+        },
+        effectId: {
+          type: "string",
+          description: "Message effect ID.",
+        },
+        effect: {
+          type: "string",
+          description: "Message effect name.",
+        },
+        buffer: {
+          type: "string",
+          description: "Base64 encoded buffer for attachment.",
+        },
+        contentType: {
+          type: "string",
+          description: "MIME content type for buffer.",
+        },
+        mimeType: {
+          type: "string",
+          description: "MIME type for attachment.",
+        },
+        path: {
+          type: "string",
+          description: "Local file path for attachment.",
+        },
+        filePath: {
+          type: "string",
+          description: "Local file path for attachment (alias).",
+        },
+        quoteText: {
+          type: "string",
+          description: "Quoted text for reply.",
+        },
+        bestEffort: {
+          type: "boolean",
+          description: "Best-effort delivery.",
+        },
+        gifPlayback: {
+          type: "boolean",
+          description: "Enable GIF playback.",
+        },
+        message_id: {
+          type: "string",
+          description: "Message ID (snake_case alias).",
+        },
+        remove: {
+          type: "boolean",
+          description: "Remove reaction.",
+        },
         channelId: {
           type: "string",
           description: "Channel-specific target ID.",
+        },
+        channelIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "Multiple channel IDs.",
         },
         chatId: {
           type: "string",
           description: "Chat-specific target ID.",
         },
+        guildId: {
+          type: "string",
+          description: "Discord guild ID.",
+        },
+        userId: {
+          type: "string",
+          description: "User ID.",
+        },
+        memberId: {
+          type: "string",
+          description: "Member ID.",
+        },
+        memberIdType: {
+          type: "string",
+          description: "Member ID type.",
+        },
         limit: {
           type: "number",
           description: "Result limit for fetch actions.",
+        },
+        pageSize: {
+          type: "number",
+          description: "Page size for pagination.",
+        },
+        pageToken: {
+          type: "string",
+          description: "Page token for pagination.",
+        },
+        before: {
+          type: "string",
+          description: "Fetch messages before this ID.",
+        },
+        after: {
+          type: "string",
+          description: "Fetch messages after this ID.",
+        },
+        around: {
+          type: "string",
+          description: "Fetch messages around this ID.",
+        },
+        fromMe: {
+          type: "boolean",
+          description: "Filter own messages.",
+        },
+        includeArchived: {
+          type: "boolean",
+          description: "Include archived messages.",
+        },
+        query: {
+          type: "string",
+          description: "Search query.",
+        },
+        threadName: {
+          type: "string",
+          description: "Thread name for thread creation.",
+        },
+        name: {
+          type: "string",
+          description: "Name for channel/resource creation.",
+        },
+        type: {
+          type: "string",
+          description: "Type for channel/resource creation.",
+        },
+        reason: {
+          type: "string",
+          description: "Reason for moderation actions.",
+        },
+        deleteDays: {
+          type: "number",
+          description: "Days of messages to delete (moderation).",
         },
         gatewayUrl: {
           type: "string",

@@ -151,6 +151,66 @@ export const browserTool: BuiltinTool = {
           type: "boolean",
           description: "Include interactive elements only in snapshot.",
         },
+        target: {
+          type: "string",
+          description: 'Browser target environment: "sandbox", "host", or "node".',
+        },
+        node: {
+          type: "string",
+          description: "Node id/name when target=node.",
+        },
+        targetUrl: {
+          type: "string",
+          description: "URL for target-specific actions.",
+        },
+        limit: {
+          type: "number",
+          description: "Limit for console/network results.",
+        },
+        maxChars: {
+          type: "number",
+          description: "Max characters for snapshot output.",
+        },
+        mode: {
+          type: "string",
+          description: 'Snapshot mode: "efficient".',
+        },
+        snapshotFormat: {
+          type: "string",
+          description: 'Snapshot format: "aria" or "ai".',
+        },
+        depth: {
+          type: "number",
+          description: "Snapshot DOM depth limit.",
+        },
+        frame: {
+          type: "string",
+          description: "Frame selector for frame-scoped actions.",
+        },
+        labels: {
+          type: "boolean",
+          description: "Include labels in snapshot.",
+        },
+        inputRef: {
+          type: "string",
+          description: "Input element ref for file upload.",
+        },
+        type: {
+          type: "string",
+          description: 'Screenshot format: "png" or "jpeg".',
+        },
+        delayMs: {
+          type: "number",
+          description: "Delay in ms before action.",
+        },
+        loadState: {
+          type: "string",
+          description: "Wait for load state after navigation.",
+        },
+        request: {
+          type: "object",
+          description: "Structured act request object (alternative to flat params).",
+        },
       },
       required: ["action"],
     },

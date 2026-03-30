@@ -8,19 +8,59 @@ export const execTool: BuiltinTool = {
   definition: {
     name: "exec",
     description:
-      "Execute a shell command and return its output. " +
-      "Commands run in the workspace directory. " +
-      "Timeout defaults to 120 seconds.",
+      "Execute shell commands with background continuation. " +
+      "Use yieldMs/background to continue later via process tool. " +
+      "Use pty=true for TTY-required commands (terminal UIs, coding agents).",
     input_schema: {
       type: "object",
       properties: {
         command: {
           type: "string",
-          description: "The shell command to execute.",
+          description: "Shell command to execute.",
+        },
+        workdir: {
+          type: "string",
+          description: "Working directory (defaults to cwd).",
+        },
+        env: {
+          type: "object",
+          description: "Additional environment variables.",
+        },
+        yieldMs: {
+          type: "number",
+          description: "Milliseconds to wait before backgrounding (default 10000).",
+        },
+        background: {
+          type: "boolean",
+          description: "Run in background immediately.",
         },
         timeout: {
           type: "number",
-          description: "Timeout in milliseconds. Defaults to 120000.",
+          description: "Timeout in seconds (optional, kills process on expiry).",
+        },
+        pty: {
+          type: "boolean",
+          description: "Run in a pseudo-terminal (PTY) when available (TTY-required CLIs, coding agents).",
+        },
+        elevated: {
+          type: "boolean",
+          description: "Run on the host with elevated permissions (if allowed).",
+        },
+        host: {
+          type: "string",
+          description: "Exec host (sandbox|gateway|node).",
+        },
+        security: {
+          type: "string",
+          description: "Exec security mode (deny|allowlist|full).",
+        },
+        ask: {
+          type: "string",
+          description: "Exec ask mode (off|on-miss|always).",
+        },
+        node: {
+          type: "string",
+          description: "Node id/name for host=node.",
         },
       },
       required: ["command"],
@@ -29,10 +69,38 @@ export const execTool: BuiltinTool = {
 
   async execute(input: Record<string, unknown>, ctx: BuiltinToolContext): Promise<BuiltinToolResult> {
     const command = input.command as string;
-    const timeout = typeof input.timeout === "number" ? input.timeout : DEFAULT_TIMEOUT_MS;
+    const workdir = (input.workdir as string) || ctx.cwd;
+    const extraEnv = (input.env as Record<string, string>) || {};
+    // OpenClaw uses timeout in seconds; convert to ms for internal use
+    const timeoutSec = typeof input.timeout === "number" ? input.timeout : 120;
+    const timeoutMs = timeoutSec * 1000;
+
+    // Background execution: delegate to process registry if available
+    if (input.background === true || typeof input.yieldMs === "number") {
+      try {
+        const { spawnBackground } = await import("./process-registry.js");
+        const entry = spawnBackground(command, workdir);
+        const yieldMs = typeof input.yieldMs === "number" ? input.yieldMs : 0;
+        if (yieldMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, yieldMs));
+        }
+        return {
+          content: JSON.stringify({
+            sessionId: entry.sessionId,
+            pid: entry.pid,
+            command: entry.command,
+            status: entry.status,
+            tail: (entry.stdout + entry.stderr).slice(-500),
+          }),
+        };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { content: `Error starting background process: ${msg}`, isError: true };
+      }
+    }
 
     try {
-      const result = await runCommand(command, ctx.cwd, timeout);
+      const result = await runCommand(command, workdir, timeoutMs, extraEnv);
       const output = truncateOutput(result.stdout + result.stderr, MAX_OUTPUT_BYTES);
       if (result.exitCode !== 0) {
         return {
@@ -54,13 +122,18 @@ interface CommandResult {
   exitCode: number;
 }
 
-function runCommand(command: string, cwd: string, timeout: number): Promise<CommandResult> {
+function runCommand(
+  command: string,
+  cwd: string,
+  timeout: number,
+  extraEnv: Record<string, string> = {},
+): Promise<CommandResult> {
   return new Promise((resolve, reject) => {
     const proc = spawn("sh", ["-c", command], {
       cwd,
       timeout,
       stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env },
+      env: { ...process.env, ...extraEnv },
     });
 
     let stdout = "";

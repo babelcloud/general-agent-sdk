@@ -12,14 +12,13 @@ export const processTool: BuiltinTool = {
   definition: {
     name: "process",
     description:
-      "Manage background exec sessions: list, poll, log, write, send-keys, kill, clear, remove.",
+      "Manage running exec sessions: list, poll, log, write, send-keys, submit, paste, kill.",
     input_schema: {
       type: "object",
       properties: {
         action: {
           type: "string",
-          description:
-            "Process action: list, poll, log, write, send-keys, submit, paste, kill, clear, remove.",
+          description: "Process action.",
         },
         sessionId: {
           type: "string",
@@ -31,11 +30,29 @@ export const processTool: BuiltinTool = {
         },
         data: {
           type: "string",
-          description: "Data to write to stdin (action=write).",
+          description: "Data to write for write.",
+        },
+        keys: {
+          type: "array",
+          items: { type: "string" },
+          description: "Key tokens to send for send-keys.",
+        },
+        hex: {
+          type: "array",
+          items: { type: "string" },
+          description: "Hex bytes to send for send-keys.",
+        },
+        literal: {
+          type: "string",
+          description: "Literal string for send-keys.",
         },
         text: {
           type: "string",
-          description: "Text to paste (action=paste).",
+          description: "Text to paste for paste.",
+        },
+        bracketed: {
+          type: "boolean",
+          description: "Wrap paste in bracketed mode.",
         },
         eof: {
           type: "boolean",
@@ -43,18 +60,17 @@ export const processTool: BuiltinTool = {
         },
         offset: {
           type: "number",
-          description: "Log offset (action=log).",
+          description: "Log offset.",
         },
         limit: {
           type: "number",
-          description: "Log line limit (action=log).",
+          description: "Log length.",
         },
         timeout: {
           type: "number",
           description: "For poll: wait up to this many milliseconds before returning.",
         },
       },
-      required: ["action"],
     },
   },
 
