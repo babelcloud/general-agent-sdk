@@ -1,7 +1,23 @@
 {
   "name": "general-agent-sdk",
   "version": "0.1.0",
+  "description": "Session-first embedded Agent execution kernel SDK — stream LLM responses, manage hosted tools, and control agent sessions with full host ownership.",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/babelcloud/general-agent-sdk.git"
+  },
+  "keywords": [
+    "agent",
+    "sdk",
+    "llm",
+    "ai",
+    "anthropic",
+    "streaming",
+    "tool-calling",
+    "session"
+  ],
   "files": [
     "dist/**/*",
     "manifests/upstream-provenance.json"

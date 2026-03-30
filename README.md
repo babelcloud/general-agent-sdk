@@ -6,7 +6,7 @@ The primary host target is VisionClaw, where this SDK serves as a third executio
 
 ## Status
 
-- Repository: `https://github.com/babelcloud/openclaw-agent-sdk`
+- Repository: `https://github.com/babelcloud/general-agent-sdk`
 - Package name: `general-agent-sdk`
 - Current package version: `0.1.0`
 - Runtime: Node.js `>=22.14.0`
