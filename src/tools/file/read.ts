@@ -96,8 +96,8 @@ export function createReadTool(cwd: string, ops?: ReadOperations): OpenClawTool 
 
 				let result = truncated.content;
 
-				if (truncated.wasTruncated) {
-					result += `\n\n[Truncated: showing ${truncated.lineCount} of ${totalLines} total lines. Use offset/limit to read more.]`;
+				if (truncated.truncated) {
+					result += `\n\n[Truncated: showing ${truncated.outputLines} of ${totalLines} total lines. Use offset/limit to read more.]`;
 				} else if (offset !== undefined || limit !== undefined) {
 					result += `\n\n[Showing lines ${startLine + 1}-${endLine} of ${totalLines} total]`;
 				}

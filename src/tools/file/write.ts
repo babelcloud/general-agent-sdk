@@ -19,7 +19,7 @@ export interface WriteOperations {
 function createDefaultWriteOperations(): WriteOperations {
 	return {
 		writeFile: (filePath: string, content: string) => fsWriteFile(filePath, content, "utf-8"),
-		mkdir: (dirPath: string) => fsMkdir(dirPath, { recursive: true }),
+		mkdir: async (dirPath: string) => { await fsMkdir(dirPath, { recursive: true }); },
 	};
 }
 
