@@ -1,21 +1,21 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawStreamEvent } from "../../public/events.js";
+import type { GeneralAgentStreamEvent } from "../../public/events.js";
 import type {
-  OpenClawHostedToolDefinition,
-  OpenClawHostedToolErrorInput,
-  OpenClawHostedToolResultInput,
+  GeneralAgentHostedToolDefinition,
+  GeneralAgentHostedToolErrorInput,
+  GeneralAgentHostedToolResultInput,
 } from "../../public/host-tools.js";
-import type { OpenClawSessionStoreAdapter } from "../../public/persistence.js";
-import type { OpenClawAgentSdkOptions } from "../../public/sdk.js";
-import type { OpenClawAgentSession } from "../../public/session.js";
+import type { GeneralAgentSessionStoreAdapter } from "../../public/persistence.js";
+import type { GeneralAgentAgentSdkOptions } from "../../public/sdk.js";
+import type { GeneralAgentAgentSession } from "../../public/session.js";
 import type {
-  OpenClawCompactionOptions,
-  OpenClawCurrentQueryLike,
-  OpenClawSessionParams,
-  OpenClawTurnInput,
-  OpenClawUsageSnapshot,
+  GeneralAgentCompactionOptions,
+  GeneralAgentCurrentQueryLike,
+  GeneralAgentSessionParams,
+  GeneralAgentTurnInput,
+  GeneralAgentUsageSnapshot,
 } from "../../public/types.js";
 import {
   createAssistantCompletionEvents,
@@ -27,7 +27,7 @@ import { HostLoggerSink } from "../logging/host-logger.js";
 import { resolveHostSessionFile } from "../sessions/session-store.js";
 import { isToolAllowedInEmbeddedMode } from "../tools/tool-policy.js";
 import { assembleLocalTools } from "../../tools/tool-assembly.js";
-import type { OpenClawTool } from "../../tools/tool-interface.js";
+import type { GeneralAgentTool } from "../../tools/tool-interface.js";
 import type { AgentContext, AgentTool, AgentEvent, AgentMessage } from "../../loop/agent-types.js";
 import { agentLoop } from "../../loop/agent-loop.js";
 import type { Message, UserMessage } from "../../providers/anthropic-types.js";
@@ -43,7 +43,7 @@ type PendingHostedToolCall = {
 
 type TranscriptEntry =
   | { type: "system_prompt"; prompt: string; modelRef: string; timestamp: number }
-  | { type: "message"; role: string; content: OpenClawTurnInput["content"]; timestamp: number }
+  | { type: "message"; role: string; content: GeneralAgentTurnInput["content"]; timestamp: number }
   | {
       type: "tool_call";
       callId: string;
@@ -61,28 +61,28 @@ type TranscriptEntry =
     }
   | { type: "assistant"; text: string; timestamp: number };
 
-export class OpenClawSdkSession implements OpenClawAgentSession {
-  private params: OpenClawSessionParams;
-  private readonly sessionStore: OpenClawSessionStoreAdapter;
-  private readonly hostedTools: OpenClawHostedToolDefinition[];
+export class GeneralAgentSdkSession implements GeneralAgentAgentSession {
+  private params: GeneralAgentSessionParams;
+  private readonly sessionStore: GeneralAgentSessionStoreAdapter;
+  private readonly hostedTools: GeneralAgentHostedToolDefinition[];
   private readonly restorePromise: Promise<void>;
   private readonly dynamicMcpServers: Record<string, Record<string, unknown>> = {};
-  private usageSnapshot: OpenClawUsageSnapshot | null = null;
+  private usageSnapshot: GeneralAgentUsageSnapshot | null = null;
   private transcriptPath: string | null;
   private pendingHostedTool: PendingHostedToolCall | null = null;
   private stopRequested = false;
   private abortController: AbortController | null = null;
-  private currentQuery: OpenClawCurrentQueryLike | null = null;
+  private currentQuery: GeneralAgentCurrentQueryLike | null = null;
   private lastCompactionAt = 0;
   private loggerSink: HostLoggerSink;
-  private readonly localTools: OpenClawTool[];
+  private readonly localTools: GeneralAgentTool[];
   private readonly hostedToolBridge = new HostedToolBridge();
   // Persistent agent context across turns (for the vendored loop)
   private agentMessages: AgentMessage[] = [];
 
   constructor(
-    private readonly options: OpenClawAgentSdkOptions,
-    params: OpenClawSessionParams,
+    private readonly options: GeneralAgentAgentSdkOptions,
+    params: GeneralAgentSessionParams,
   ) {
     this.params = params;
     this.sessionStore = options.sessionStore;
@@ -93,13 +93,13 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
     this.localTools = assembleLocalTools(options.workspaceDir);
   }
 
-  reconfigure(params: OpenClawSessionParams): void {
+  reconfigure(params: GeneralAgentSessionParams): void {
     this.params = params;
     this.transcriptPath = params.sessionFile;
     this.loggerSink = new HostLoggerSink(this.options.logger, params.rawEventLogPath);
   }
 
-  async *streamTurn(input: OpenClawTurnInput): AsyncIterable<OpenClawStreamEvent> {
+  async *streamTurn(input: GeneralAgentTurnInput): AsyncIterable<GeneralAgentStreamEvent> {
     await this.restorePromise;
     this.transcriptPath = await resolveHostSessionFile(
       this.sessionStore,
@@ -166,13 +166,13 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
     yield* this.runWithVendoredLoop(input, apiKey);
   }
 
-  injectMessage(_input: OpenClawTurnInput): boolean {
+  injectMessage(_input: GeneralAgentTurnInput): boolean {
     return this.pendingHostedTool === null;
   }
 
   async *submitHostedToolResult(
-    input: OpenClawHostedToolResultInput,
-  ): AsyncIterable<OpenClawStreamEvent> {
+    input: GeneralAgentHostedToolResultInput,
+  ): AsyncIterable<GeneralAgentStreamEvent> {
     await this.restorePromise;
     const pending = this.assertPendingHostedTool(input.callId);
     await this.appendTranscript({
@@ -209,8 +209,8 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
   }
 
   async *submitHostedToolError(
-    input: OpenClawHostedToolErrorInput,
-  ): AsyncIterable<OpenClawStreamEvent> {
+    input: GeneralAgentHostedToolErrorInput,
+  ): AsyncIterable<GeneralAgentStreamEvent> {
     await this.restorePromise;
     const pending = this.assertPendingHostedTool(input.callId);
     await this.appendTranscript({
@@ -264,7 +264,7 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
     this.lastCompactionAt = Date.now();
   }
 
-  async maybeCompactByTokens(options?: OpenClawCompactionOptions): Promise<void> {
+  async maybeCompactByTokens(options?: GeneralAgentCompactionOptions): Promise<void> {
     const snapshot = this.usageSnapshot;
     if (!snapshot) return;
     const threshold = options?.usedPctThreshold ?? 85;
@@ -283,11 +283,11 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
     return this.transcriptPath;
   }
 
-  getUsageSnapshot(): OpenClawUsageSnapshot | null {
+  getUsageSnapshot(): GeneralAgentUsageSnapshot | null {
     return this.usageSnapshot;
   }
 
-  getCurrentQuery(): OpenClawCurrentQueryLike | null {
+  getCurrentQuery(): GeneralAgentCurrentQueryLike | null {
     return this.currentQuery;
   }
 
@@ -307,9 +307,9 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
   // --- Vendored loop integration ---
 
   private async *runWithVendoredLoop(
-    input: OpenClawTurnInput,
+    input: GeneralAgentTurnInput,
     apiKey: string,
-  ): AsyncIterable<OpenClawStreamEvent> {
+  ): AsyncIterable<GeneralAgentStreamEvent> {
     const model = modelFromRef(this.params.modelRef);
 
     // Build agent tools: local tools (wrapped) + hosted tools (bridged)
@@ -445,9 +445,9 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
   }
 
   /**
-   * Wrap an OpenClawTool as an AgentTool for the vendored loop.
+   * Wrap an GeneralAgentTool as an AgentTool for the vendored loop.
    */
-  private wrapLocalToolAsAgentTool(tool: OpenClawTool): AgentTool {
+  private wrapLocalToolAsAgentTool(tool: GeneralAgentTool): AgentTool {
     return {
       name: tool.name,
       label: tool.name,
@@ -455,7 +455,7 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
       parameters: tool.parameters,
       execute: async (toolCallId: string, params: any, signal?: AbortSignal) => {
         const result = await tool.execute(toolCallId, params, signal);
-        // Convert OpenClawToolResult → AgentToolResult
+        // Convert GeneralAgentToolResult → AgentToolResult
         return {
           content: result.content.map((c) => {
             if (c.type === "text") return { type: "text" as const, text: c.text };
@@ -474,7 +474,7 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
     };
   }
 
-  private buildUserContent(input: OpenClawTurnInput): string | Array<any> {
+  private buildUserContent(input: GeneralAgentTurnInput): string | Array<any> {
     const textParts = input.content.filter((c) => c.type === "text") as Array<{ type: "text"; text: string }>;
     const imageParts = input.content.filter((c) => c.type === "image");
 
@@ -522,7 +522,7 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
     });
   }
 
-  private resolveHostedTool(input: OpenClawTurnInput): OpenClawHostedToolDefinition | null {
+  private resolveHostedTool(input: GeneralAgentTurnInput): GeneralAgentHostedToolDefinition | null {
     const text = this.extractText(input).toLowerCase();
     for (const tool of this.hostedTools) {
       if (!isToolAllowedInEmbeddedMode(tool.name)) {
@@ -538,16 +538,16 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
     return null;
   }
 
-  private extractText(input: OpenClawTurnInput): string {
+  private extractText(input: GeneralAgentTurnInput): string {
     return input.content
-      .filter((entry): entry is Extract<OpenClawTurnInput["content"][number], { type: "text" }> =>
+      .filter((entry): entry is Extract<GeneralAgentTurnInput["content"][number], { type: "text" }> =>
         entry.type === "text",
       )
       .map((entry) => entry.text)
       .join("\n");
   }
 
-  private bumpUsage(input: OpenClawTurnInput): void {
+  private bumpUsage(input: GeneralAgentTurnInput): void {
     const approximateInputTokens = Math.max(1, Math.ceil(this.extractText(input).length / 4));
     const previous = this.usageSnapshot?.usedInputTokens ?? 0;
     const contextWindow = this.usageSnapshot?.contextWindow ?? 200_000;
@@ -586,8 +586,8 @@ export class OpenClawSdkSession implements OpenClawAgentSession {
   }
 
   private async *emitEvents(
-    events: Iterable<OpenClawStreamEvent>,
-  ): AsyncIterable<OpenClawStreamEvent> {
+    events: Iterable<GeneralAgentStreamEvent>,
+  ): AsyncIterable<GeneralAgentStreamEvent> {
     for (const event of events) {
       this.loggerSink.emitRaw(event as Record<string, unknown>);
       yield event;

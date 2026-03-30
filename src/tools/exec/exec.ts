@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "child_process";
 import { z } from "zod";
-import type { OpenClawTool, OpenClawToolResult } from "../tool-interface.js";
+import type { GeneralAgentTool, GeneralAgentToolResult } from "../tool-interface.js";
 import { textResult, failedTextResult } from "../shared/tool-result.js";
 import { waitForChildProcess } from "../shared/child-process.js";
 import { getShellConfig, getShellEnv, killProcessTree, sanitizeBinaryOutput } from "../shared/shell.js";
@@ -93,14 +93,14 @@ export function createLocalExecOperations(): ExecOperations {
 	};
 }
 
-export function createExecTool(cwd: string, ops?: ExecOperations): OpenClawTool {
+export function createExecTool(cwd: string, ops?: ExecOperations): GeneralAgentTool {
 	const operations = ops ?? createLocalExecOperations();
 
 	return {
 		name: "exec",
 		description: "Execute a shell command. Supports timeout, background execution, and working directory override.",
 		parameters: execSchema,
-		async execute(callId: string, params: unknown, signal?: AbortSignal): Promise<OpenClawToolResult> {
+		async execute(callId: string, params: unknown, signal?: AbortSignal): Promise<GeneralAgentToolResult> {
 			const parsed = execSchema.parse(params);
 			const { command, timeout, background, yieldMs = 10000 } = parsed;
 			const workdir = parsed.workdir ?? cwd;
@@ -158,7 +158,7 @@ function startBackgroundExec(
 	command: string,
 	cwd: string,
 	operations: ExecOperations,
-): OpenClawToolResult {
+): GeneralAgentToolResult {
 	const sessionId = randomBytes(6).toString("hex");
 	const { shell, args } = getShellConfig();
 
@@ -199,5 +199,5 @@ function startBackgroundExec(
 
 	return textResult(
 		`Background session started: ${sessionId}\nCommand: ${command}\nPID: ${child.pid}\nUse the process tool to check status.`,
-	) as OpenClawToolResult;
+	) as GeneralAgentToolResult;
 }

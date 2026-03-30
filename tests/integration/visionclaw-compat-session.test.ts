@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { createOpenClawAgentSdk } from "../../src/index.js";
+import { createGeneralAgentAgentSdk } from "../../src/index.js";
 import { createVisionClawSessionAdapter } from "../../src/compat/visionclaw/index.js";
 
 describe("VisionClaw compat session adapter", () => {
   it("preserves hosted-tool tool_use -> tool_result continuity without renaming exec", async () => {
-    const sdk = await createOpenClawAgentSdk({
-      workspaceDir: "/tmp/openclaw-sdk-workspace",
-      stateDir: "/tmp/openclaw-sdk-state",
-      agentDir: "/tmp/openclaw-sdk-agent",
+    const sdk = await createGeneralAgentAgentSdk({
+      workspaceDir: "/tmp/general-agent-sdk-workspace",
+      stateDir: "/tmp/general-agent-sdk-state",
+      agentDir: "/tmp/general-agent-sdk-agent",
       profileId: "default",
       pluginMode: "disabled",
       logger: {
@@ -22,7 +22,7 @@ describe("VisionClaw compat session adapter", () => {
         },
         async save() {},
         async resolveSessionFile() {
-          return "/tmp/openclaw-sdk-state/general.jsonl";
+          return "/tmp/general-agent-sdk-state/general.jsonl";
         },
       },
       hostedTools: [
@@ -44,7 +44,7 @@ describe("VisionClaw compat session adapter", () => {
         },
         systemPrompt: "Use exec when asked.",
         modelRef: "openai/gpt-5.4",
-        sessionFile: "/tmp/openclaw-sdk-state/general.jsonl",
+        sessionFile: "/tmp/general-agent-sdk-state/general.jsonl",
       },
       hostedToolExecutor: {
         async execute(toolName, input) {

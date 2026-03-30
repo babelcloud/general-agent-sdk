@@ -1,13 +1,13 @@
 import type {
-  OpenClawHostedToolErrorInput,
-  OpenClawHostedToolResultInput,
+  GeneralAgentHostedToolErrorInput,
+  GeneralAgentHostedToolResultInput,
 } from "../../public/host-tools.js";
-import type { OpenClawAgentSdk } from "../../public/sdk.js";
+import type { GeneralAgentAgentSdk } from "../../public/sdk.js";
 import type {
-  OpenClawCompactionOptions,
-  OpenClawCurrentQueryLike,
-  OpenClawSessionParams,
-  OpenClawUsageSnapshot,
+  GeneralAgentCompactionOptions,
+  GeneralAgentCurrentQueryLike,
+  GeneralAgentSessionParams,
+  GeneralAgentUsageSnapshot,
 } from "../../public/types.js";
 
 export type VisionClawCompatUserContent =
@@ -94,7 +94,7 @@ export interface VisionClawCompatSessionLike {
   isStopRequested(): boolean;
   requestCompaction(): Promise<void>;
   maybeCompactByTokens(
-    options?: OpenClawCompactionOptions,
+    options?: GeneralAgentCompactionOptions,
   ): Promise<void>;
   captureSessionId(id: string | undefined): void;
   captureUsageSnapshot(snapshot: {
@@ -106,8 +106,8 @@ export interface VisionClawCompatSessionLike {
   capturePostCompactionSnapshot(postCompactionTokens: number): void;
   getSessionId(): string | null;
   getTranscriptPath(): string | null;
-  getUsageSnapshot(): OpenClawUsageSnapshot | null;
-  getCurrentQuery(): OpenClawCurrentQueryLike | null;
+  getUsageSnapshot(): GeneralAgentUsageSnapshot | null;
+  getCurrentQuery(): GeneralAgentCurrentQueryLike | null;
   setDynamicMcpServers(servers: Record<string, Record<string, unknown>>): void;
   getDynamicMcpServers(): Record<string, Record<string, unknown>>;
   readonly hasOrphanedInjections: boolean;
@@ -115,12 +115,12 @@ export interface VisionClawCompatSessionLike {
 }
 
 export interface VisionClawSessionAdapterArgs {
-  sdk: OpenClawAgentSdk;
-  sessionParams: OpenClawSessionParams;
+  sdk: GeneralAgentAgentSdk;
+  sessionParams: GeneralAgentSessionParams;
   hostedToolExecutor: VisionClawHostedToolExecutor;
   initialDynamicMcpServers?: Record<string, Record<string, unknown>>;
 }
 
 export type HostedToolResumeInput =
-  | OpenClawHostedToolResultInput
-  | OpenClawHostedToolErrorInput;
+  | GeneralAgentHostedToolResultInput
+  | GeneralAgentHostedToolErrorInput;

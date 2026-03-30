@@ -2,14 +2,14 @@ import { describe, it, expect } from "vitest";
 import { z } from "zod";
 
 import {
-  type OpenClawTool,
-  type OpenClawToolResult,
+  type GeneralAgentTool,
+  type GeneralAgentToolResult,
   toAnthropicToolDef,
 } from "../../../src/tools/tool-interface.js";
 import { textResult, jsonResult } from "../../../src/tools/shared/tool-result.js";
 
-describe("OpenClawTool interface", () => {
-  const mockTool: OpenClawTool = {
+describe("GeneralAgentTool interface", () => {
+  const mockTool: GeneralAgentTool = {
     name: "test_tool",
     description: "A test tool",
     parameters: z.object({ input: z.string() }),

@@ -1,4 +1,4 @@
-import type { OpenClawTool } from "./tool-interface.js";
+import type { GeneralAgentTool } from "./tool-interface.js";
 import { createReadTool } from "./file/read.js";
 import { createWriteTool } from "./file/write.js";
 import { createEditTool } from "./file/edit.js";
@@ -8,8 +8,8 @@ import { createWebFetchTool } from "./web/web-fetch.js";
 import { createWebSearchTool } from "./web/web-search.js";
 // import { createBrowserTool } from "./browser/browser.js";
 
-export function assembleLocalTools(workspaceDir: string): OpenClawTool[] {
-	const tools: OpenClawTool[] = [
+export function assembleLocalTools(workspaceDir: string): GeneralAgentTool[] {
+	const tools: GeneralAgentTool[] = [
 		createReadTool(workspaceDir),
 		createWriteTool(workspaceDir),
 		createEditTool(workspaceDir),

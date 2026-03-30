@@ -1,14 +1,14 @@
-# OpenClaw Agent SDK
+# General Agent SDK
 
-`openclaw-agent-sdk` is a session-first embedded SDK that extracts the agent execution kernel from OpenClaw and exposes it as a host-controlled TypeScript package.
+`general-agent-sdk` is a session-first embedded SDK that extracts the agent execution kernel from OpenClaw and exposes it as a host-controlled TypeScript package.
 
 The primary host target is VisionClaw, where this SDK serves as a third execution backend alongside the Claude Agent SDK and the OpenAI Agents SDK. The SDK is intentionally narrow: it preserves execution-layer semantics such as tool calls, hosted-tool suspend/resume, compaction, plugin policy, and provider-specific streaming, while leaving orchestration, channel routing, profile ownership, and canonical session state to the host.
 
 ## Status
 
 - Repository: `https://github.com/babelcloud/openclaw-agent-sdk`
-- Package name: `openclaw-agent-sdk`
-- Current package version: `0.0.0`
+- Package name: `general-agent-sdk`
+- Current package version: `0.1.0`
 - Runtime: Node.js `>=22.14.0`
 - Module format: ESM
 - CI workflow: [`.github/workflows/sdk-ci.yml`](./.github/workflows/sdk-ci.yml)
@@ -65,9 +65,9 @@ The supported API surface is exported from [`src/index.ts`](./src/index.ts) and 
 ### Factory
 
 ```ts
-import { createOpenClawAgentSdk } from "openclaw-agent-sdk";
+import { createGeneralAgentSdk } from "general-agent-sdk";
 
-const sdk = await createOpenClawAgentSdk({
+const sdk = await createGeneralAgentSdk({
   workspaceDir,
   stateDir,
   agentDir,
@@ -104,7 +104,7 @@ for await (const event of session.streamTurn({
   role: "user",
   content: [{ type: "text", text: "finish now" }],
 })) {
-  // host consumes normalized OpenClawStreamEvent values
+  // host consumes normalized GeneralAgentStreamEvent values
 }
 ```
 
@@ -123,7 +123,7 @@ for await (const event of session.submitHostedToolResult({
 
 ## Event Model
 
-`OpenClawStreamEvent` currently supports:
+`GeneralAgentStreamEvent` currently supports:
 
 - `assistant_delta`
 - `reasoning_delta`
@@ -155,7 +155,7 @@ The persistence adapter lives in [`src/public/persistence.ts`](./src/public/pers
 
 ## Logging Model
 
-The SDK emits canonical host-facing log events through `OpenClawHostLogger`.
+The SDK emits canonical host-facing log events through `GeneralAgentHostLogger`.
 
 Supported log categories:
 
@@ -174,7 +174,7 @@ The factory accepts:
 
 - `pluginMode: "disabled" | "allowlisted" | "full-embedded"`
 - `enabledPluginIds?: string[]`
-- `hostedTools?: OpenClawHostedToolDefinition[]`
+- `hostedTools?: GeneralAgentHostedToolDefinition[]`
 
 This makes the host's trust boundary explicit. The SDK can preserve OpenClaw's plugin and tool semantics, but the host decides how much of that surface is enabled in embedded mode.
 
@@ -241,7 +241,7 @@ VisionClaw consumes this repository as a dedicated dependency/submodule and keep
 - cross-engine continuity journal
 - top-level profile and environment management
 
-That design keeps OpenClaw as an execution backend rather than turning VisionClaw into an OpenClaw runtime shell.
+That design keeps the General Agent SDK as an execution backend rather than turning VisionClaw into an OpenClaw runtime shell.
 
 ## Specifications and Implementation Notes
 

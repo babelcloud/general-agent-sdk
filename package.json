@@ -1,7 +1,6 @@
 {
-  "name": "openclaw-agent-sdk",
-  "version": "0.0.0",
-  "private": true,
+  "name": "general-agent-sdk",
+  "version": "0.1.0",
   "type": "module",
   "files": [
     "dist/**/*",

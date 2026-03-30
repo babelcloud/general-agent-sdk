@@ -1,26 +1,26 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { OpenClawHostLogger, OpenClawLogEvent } from "../../public/types.js";
+import type { GeneralAgentHostLogger, GeneralAgentLogEvent } from "../../public/types.js";
 
 export class HostLoggerSink {
   constructor(
-    private readonly logger: OpenClawHostLogger,
+    private readonly logger: GeneralAgentHostLogger,
     private readonly rawEventLogPath?: string,
   ) {}
 
-  emitInfo(event: OpenClawLogEvent): void {
+  emitInfo(event: GeneralAgentLogEvent): void {
     this.logger.onInfo(event);
   }
 
-  emitDebug(event: OpenClawLogEvent): void {
+  emitDebug(event: GeneralAgentLogEvent): void {
     this.logger.onDebug(event);
   }
 
-  emitWarn(event: OpenClawLogEvent): void {
+  emitWarn(event: GeneralAgentLogEvent): void {
     this.logger.onWarn(event);
   }
 
-  emitError(event: OpenClawLogEvent): void {
+  emitError(event: GeneralAgentLogEvent): void {
     this.logger.onError(event);
   }
 

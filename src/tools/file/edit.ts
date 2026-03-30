@@ -1,7 +1,7 @@
 import { constants } from "fs";
 import { access as fsAccess, readFile as fsReadFile, writeFile as fsWriteFile } from "fs/promises";
 import { z } from "zod";
-import type { OpenClawTool, OpenClawToolResult } from "../tool-interface.js";
+import type { GeneralAgentTool, GeneralAgentToolResult } from "../tool-interface.js";
 import { textResult, failedTextResult } from "../shared/tool-result.js";
 import { resolveToCwd } from "../shared/path-utils.js";
 import { withFileMutationQueue } from "../shared/file-mutation-queue.js";
@@ -33,7 +33,7 @@ const defaultEditOperations: EditOperations = {
 	writeFile: (filePath: string, content: string) => fsWriteFile(filePath, content, "utf-8"),
 };
 
-export function createEditTool(cwd: string, ops?: EditOperations): OpenClawTool {
+export function createEditTool(cwd: string, ops?: EditOperations): GeneralAgentTool {
 	const operations = ops ?? defaultEditOperations;
 
 	return {
@@ -41,7 +41,7 @@ export function createEditTool(cwd: string, ops?: EditOperations): OpenClawTool 
 		description:
 			"Edit a file by replacing exact text. The oldText must match exactly (including whitespace). Use this for precise, surgical edits.",
 		parameters: editSchema,
-		async execute(callId: string, params: unknown, signal?: AbortSignal): Promise<OpenClawToolResult> {
+		async execute(callId: string, params: unknown, signal?: AbortSignal): Promise<GeneralAgentToolResult> {
 			const parsed = editSchema.parse(params);
 			const { path: filePath, oldText, newText } = parsed;
 

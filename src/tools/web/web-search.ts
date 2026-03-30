@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { OpenClawTool } from "../tool-interface.js";
+import type { GeneralAgentTool } from "../tool-interface.js";
 import { textResult, failedTextResult } from "../shared/tool-result.js";
 
 const webSearchSchema = z.object({
@@ -7,7 +7,7 @@ const webSearchSchema = z.object({
 	count: z.number().optional().describe("Number of results (default 5, max 10)"),
 });
 
-export function createWebSearchTool(): OpenClawTool | null {
+export function createWebSearchTool(): GeneralAgentTool | null {
 	const apiKey = process.env.BRAVE_SEARCH_API_KEY;
 	if (!apiKey) return null;
 

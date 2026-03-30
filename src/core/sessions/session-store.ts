@@ -1,9 +1,9 @@
-import type { OpenClawSessionStoreAdapter } from "../../public/persistence.js";
-import type { OpenClawSessionIdentity } from "../../public/types.js";
+import type { GeneralAgentSessionStoreAdapter } from "../../public/persistence.js";
+import type { GeneralAgentSessionIdentity } from "../../public/types.js";
 
 export async function resolveHostSessionFile(
-  store: OpenClawSessionStoreAdapter,
-  identity: OpenClawSessionIdentity,
+  store: GeneralAgentSessionStoreAdapter,
+  identity: GeneralAgentSessionIdentity,
   explicitSessionFile?: string,
 ): Promise<string> {
   if (explicitSessionFile) {

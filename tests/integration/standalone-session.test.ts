@@ -2,10 +2,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { createOpenClawAgentSdk, type OpenClawStreamEvent } from "../../src/index.js";
+import { createGeneralAgentAgentSdk, type GeneralAgentStreamEvent } from "../../src/index.js";
 
-async function collect(stream: AsyncIterable<OpenClawStreamEvent>): Promise<OpenClawStreamEvent[]> {
-  const out: OpenClawStreamEvent[] = [];
+async function collect(stream: AsyncIterable<GeneralAgentStreamEvent>): Promise<GeneralAgentStreamEvent[]> {
+  const out: GeneralAgentStreamEvent[] = [];
   for await (const event of stream) {
     out.push(event);
   }
@@ -22,11 +22,11 @@ describe("standalone session", () => {
   });
 
   it("streams one hosted tool call and resumes it with the same callId", async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-sdk-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "general-agent-sdk-"));
     tempDirs.push(root);
     const sessionFile = path.join(root, "general.jsonl");
 
-    const sdk = await createOpenClawAgentSdk({
+    const sdk = await createGeneralAgentAgentSdk({
       workspaceDir: root,
       stateDir: path.join(root, "state"),
       agentDir: path.join(root, "agent"),
@@ -75,7 +75,7 @@ describe("standalone session", () => {
     );
 
     const hosted = firstTurn.find(
-      (event): event is Extract<OpenClawStreamEvent, { kind: "hosted_tool_call" }> =>
+      (event): event is Extract<GeneralAgentStreamEvent, { kind: "hosted_tool_call" }> =>
         event.kind === "hosted_tool_call",
     );
     expect(hosted).toBeDefined();

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { OpenClawTool } from "../tool-interface.js";
+import type { GeneralAgentTool } from "../tool-interface.js";
 import { textResult, failedTextResult } from "../shared/tool-result.js";
 import { validateUrlForFetch } from "./ssrf.js";
 import { truncateHead } from "../shared/truncate.js";
@@ -28,7 +28,7 @@ function htmlToText(html: string): string {
 		.trim();
 }
 
-export function createWebFetchTool(): OpenClawTool | null {
+export function createWebFetchTool(): GeneralAgentTool | null {
 	return {
 		name: "web_fetch",
 		description: "Fetch content from a URL with SSRF protection.",
@@ -50,7 +50,7 @@ export function createWebFetchTool(): OpenClawTool | null {
 				const response = await fetch(url, {
 					signal: controller.signal,
 					headers: {
-						"User-Agent": "OpenClaw-Agent-SDK/0.1",
+						"User-Agent": "GeneralAgent-Agent-SDK/0.1",
 						Accept: "text/html, application/json, text/plain, */*",
 					},
 					redirect: "follow",

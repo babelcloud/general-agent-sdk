@@ -1,20 +1,20 @@
-import type { OpenClawToolResult } from "../tool-interface.js";
+import type { GeneralAgentToolResult } from "../tool-interface.js";
 
-export function textResult(text: string): OpenClawToolResult {
+export function textResult(text: string): GeneralAgentToolResult {
   return { content: [{ type: "text", text }] };
 }
 
-export function jsonResult(data: unknown): OpenClawToolResult {
+export function jsonResult(data: unknown): GeneralAgentToolResult {
   return textResult(
     typeof data === "string" ? data : JSON.stringify(data, null, 2),
   );
 }
 
-export function failedTextResult(message: string): OpenClawToolResult {
+export function failedTextResult(message: string): GeneralAgentToolResult {
   return textResult(`Error: ${message}`);
 }
 
-export function imageResult(data: string, mimeType: string): OpenClawToolResult {
+export function imageResult(data: string, mimeType: string): GeneralAgentToolResult {
   return {
     content: [
       {

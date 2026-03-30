@@ -2,10 +2,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { createOpenClawAgentSdk, type OpenClawStreamEvent } from "../../src/index.js";
+import { createGeneralAgentAgentSdk, type GeneralAgentStreamEvent } from "../../src/index.js";
 
-async function collect(stream: AsyncIterable<OpenClawStreamEvent>): Promise<OpenClawStreamEvent[]> {
-  const events: OpenClawStreamEvent[] = [];
+async function collect(stream: AsyncIterable<GeneralAgentStreamEvent>): Promise<GeneralAgentStreamEvent[]> {
+  const events: GeneralAgentStreamEvent[] = [];
   for await (const event of stream) {
     events.push(event);
   }
@@ -22,10 +22,10 @@ describe("plugins and tool policy", () => {
   });
 
   it("uses allowlisted plugin mode and blocks denied embedded tool families", async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-sdk-tools-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "general-agent-sdk-tools-"));
     tempDirs.push(root);
 
-    const sdk = await createOpenClawAgentSdk({
+    const sdk = await createGeneralAgentAgentSdk({
       workspaceDir: path.join(root, "workspace"),
       stateDir: path.join(root, "state"),
       agentDir: path.join(root, "agent"),

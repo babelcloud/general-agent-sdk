@@ -1,4 +1,4 @@
-import type { OpenClawTool } from "../tool-interface.js";
+import type { GeneralAgentTool } from "../tool-interface.js";
 import { failedTextResult } from "../shared/tool-result.js";
 import { browserSchema, type BrowserInput } from "./browser-schema.js";
 
@@ -7,7 +7,7 @@ import { browserSchema, type BrowserInput } from "./browser-schema.js";
  * Requires Playwright as an optional peer dependency.
  * Playwright availability is checked at execution time via dynamic import.
  */
-export function createBrowserTool(): OpenClawTool {
+export function createBrowserTool(): GeneralAgentTool {
 	return {
 		name: "browser",
 		description:

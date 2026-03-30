@@ -5,7 +5,7 @@ import { z } from "zod";
  * Result returned by tool execution.
  * Content array matches Anthropic's ToolResultBlockParam content format.
  */
-export interface OpenClawToolResult {
+export interface GeneralAgentToolResult {
   content: Array<
     | { type: "text"; text: string }
     | { type: "image"; source: { type: "base64"; media_type: string; data: string } }
@@ -16,7 +16,7 @@ export interface OpenClawToolResult {
  * SDK-native tool definition. All vendored tools implement this interface.
  * Parameters use Zod schemas (not TypeBox).
  */
-export interface OpenClawTool {
+export interface GeneralAgentTool {
   name: string;
   description: string;
   parameters: z.ZodType<any>;
@@ -24,13 +24,13 @@ export interface OpenClawTool {
     callId: string,
     params: unknown,
     signal?: AbortSignal,
-  ): Promise<OpenClawToolResult>;
+  ): Promise<GeneralAgentToolResult>;
 }
 
 /**
  * Convert an SDK tool to the Anthropic API tool definition format.
  */
-export function toAnthropicToolDef(tool: OpenClawTool): Tool {
+export function toAnthropicToolDef(tool: GeneralAgentTool): Tool {
   return {
     name: tool.name,
     description: tool.description,

@@ -1,16 +1,16 @@
-import type { OpenClawStreamEvent } from "../../public/events.js";
-import type { OpenClawUsageSnapshot } from "../../public/types.js";
+import type { GeneralAgentStreamEvent } from "../../public/events.js";
+import type { GeneralAgentUsageSnapshot } from "../../public/types.js";
 import type { AgentEvent } from "../../loop/agent-types.js";
 import type { AssistantMessage, AssistantMessageEvent } from "../../providers/anthropic-types.js";
 
 /**
- * Translate a vendored AgentEvent into OpenClawStreamEvent(s).
+ * Translate a vendored AgentEvent into GeneralAgentStreamEvent(s).
  * Returns an array because some agent events map to multiple stream events.
  * Returns empty array for events that have no stream equivalent.
  */
 export function adaptAgentEventToStreamEvents(
   event: AgentEvent,
-): OpenClawStreamEvent[] {
+): GeneralAgentStreamEvent[] {
   switch (event.type) {
     case "message_update":
       return adaptMessageUpdate(event.assistantMessageEvent);
@@ -89,7 +89,7 @@ export function adaptAgentEventToStreamEvents(
 
 function adaptMessageUpdate(
   assistantEvent: AssistantMessageEvent,
-): OpenClawStreamEvent[] {
+): GeneralAgentStreamEvent[] {
   switch (assistantEvent.type) {
     case "text_delta":
       return [{ kind: "assistant_delta", text: assistantEvent.delta }];
@@ -100,7 +100,7 @@ function adaptMessageUpdate(
     case "thinking_end":
       return [{ kind: "reasoning_end" }];
 
-    // These don't have direct OpenClawStreamEvent equivalents
+    // These don't have direct GeneralAgentStreamEvent equivalents
     case "start":
     case "text_start":
     case "text_end":
@@ -117,7 +117,7 @@ function adaptMessageUpdate(
   }
 }
 
-function extractUsageSnapshot(msg: AssistantMessage): OpenClawUsageSnapshot | null {
+function extractUsageSnapshot(msg: AssistantMessage): GeneralAgentUsageSnapshot | null {
   if (!msg.usage) return null;
   const contextWindow = 200_000;
   return {

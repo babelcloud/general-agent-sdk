@@ -1,7 +1,7 @@
 import { mkdir as fsMkdir, writeFile as fsWriteFile } from "fs/promises";
 import { dirname } from "path";
 import { z } from "zod";
-import type { OpenClawTool, OpenClawToolResult } from "../tool-interface.js";
+import type { GeneralAgentTool, GeneralAgentToolResult } from "../tool-interface.js";
 import { textResult, failedTextResult } from "../shared/tool-result.js";
 import { resolveToCwd } from "../shared/path-utils.js";
 import { withFileMutationQueue } from "../shared/file-mutation-queue.js";
@@ -23,14 +23,14 @@ function createDefaultWriteOperations(): WriteOperations {
 	};
 }
 
-export function createWriteTool(cwd: string, ops?: WriteOperations): OpenClawTool {
+export function createWriteTool(cwd: string, ops?: WriteOperations): GeneralAgentTool {
 	const operations = ops ?? createDefaultWriteOperations();
 
 	return {
 		name: "write",
 		description: "Write content to a file. Creates parent directories if needed. Overwrites existing files.",
 		parameters: writeSchema,
-		async execute(callId: string, params: unknown): Promise<OpenClawToolResult> {
+		async execute(callId: string, params: unknown): Promise<GeneralAgentToolResult> {
 			const parsed = writeSchema.parse(params);
 
 			const resolvedPath = resolveToCwd(parsed.path, cwd);

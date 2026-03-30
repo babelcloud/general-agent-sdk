@@ -1,33 +1,33 @@
 import type {
-  OpenClawHostedToolErrorInput,
-  OpenClawHostedToolResultInput,
+  GeneralAgentHostedToolErrorInput,
+  GeneralAgentHostedToolResultInput,
 } from "./host-tools.js";
-import type { OpenClawStreamEvent } from "./events.js";
+import type { GeneralAgentStreamEvent } from "./events.js";
 import type {
-  OpenClawCompactionOptions,
-  OpenClawCurrentQueryLike,
-  OpenClawTurnInput,
-  OpenClawUsageSnapshot,
+  GeneralAgentCompactionOptions,
+  GeneralAgentCurrentQueryLike,
+  GeneralAgentTurnInput,
+  GeneralAgentUsageSnapshot,
 } from "./types.js";
 
-export interface OpenClawAgentSession {
-  streamTurn(input: OpenClawTurnInput): AsyncIterable<OpenClawStreamEvent>;
-  injectMessage(input: OpenClawTurnInput): boolean;
+export interface GeneralAgentAgentSession {
+  streamTurn(input: GeneralAgentTurnInput): AsyncIterable<GeneralAgentStreamEvent>;
+  injectMessage(input: GeneralAgentTurnInput): boolean;
   submitHostedToolResult(
-    input: OpenClawHostedToolResultInput,
-  ): AsyncIterable<OpenClawStreamEvent>;
+    input: GeneralAgentHostedToolResultInput,
+  ): AsyncIterable<GeneralAgentStreamEvent>;
   submitHostedToolError(
-    input: OpenClawHostedToolErrorInput,
-  ): AsyncIterable<OpenClawStreamEvent>;
+    input: GeneralAgentHostedToolErrorInput,
+  ): AsyncIterable<GeneralAgentStreamEvent>;
   requestStop(): void;
   clearStop(): void;
   isStopRequested(): boolean;
   requestCompaction(): Promise<void>;
-  maybeCompactByTokens(options?: OpenClawCompactionOptions): Promise<void>;
+  maybeCompactByTokens(options?: GeneralAgentCompactionOptions): Promise<void>;
   getSessionId(): string;
   getTranscriptPath(): string | null;
-  getUsageSnapshot(): OpenClawUsageSnapshot | null;
-  getCurrentQuery(): OpenClawCurrentQueryLike | null;
+  getUsageSnapshot(): GeneralAgentUsageSnapshot | null;
+  getCurrentQuery(): GeneralAgentCurrentQueryLike | null;
   setDynamicMcpServers(servers: Record<string, Record<string, unknown>>): void;
   getDynamicMcpServers(): Record<string, Record<string, unknown>>;
   closeInput(): void;

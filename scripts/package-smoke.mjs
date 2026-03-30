@@ -4,7 +4,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
-const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-sdk-pack-smoke-"));
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "general-agent-sdk-pack-smoke-"));
 const tarballDir = path.join(tempRoot, "tarballs");
 const consumerRoot = path.join(tempRoot, "consumer");
 
@@ -46,7 +46,7 @@ fs.writeFileSync(
   path.join(consumerRoot, "package.json"),
   JSON.stringify(
     {
-      name: "openclaw-sdk-smoke-consumer",
+      name: "general-agent-sdk-smoke-consumer",
       private: true,
       type: "module",
     },
@@ -66,20 +66,20 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
-  createOpenClawAgentSdk,
-} from "openclaw-agent-sdk";
-import * as pluginSdk from "openclaw-agent-sdk/plugin-sdk";
+  createGeneralAgentAgentSdk,
+} from "general-agent-sdk";
+import * as pluginSdk from "general-agent-sdk/plugin-sdk";
 
-const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-sdk-installed-"));
-const sessionFile = path.join(root, "profile", "providers", "openclaw", "transcripts", "general.jsonl");
-const rawEventLogPath = path.join(root, "profile", "providers", "openclaw", "raw-stream", "events.jsonl");
+const root = fs.mkdtempSync(path.join(os.tmpdir(), "general-agent-sdk-installed-"));
+const sessionFile = path.join(root, "profile", "providers", "general-agent", "transcripts", "general.jsonl");
+const rawEventLogPath = path.join(root, "profile", "providers", "general-agent", "raw-stream", "events.jsonl");
 const logEvents = [];
 const rawEvents = [];
 
-const sdk = await createOpenClawAgentSdk({
+const sdk = await createGeneralAgentAgentSdk({
   workspaceDir: path.join(root, "workspace"),
   stateDir: path.join(root, "profile"),
-  agentDir: path.join(root, "profile", "providers", "openclaw", "embedded"),
+  agentDir: path.join(root, "profile", "providers", "general-agent", "embedded"),
   profileId: "default",
   pluginMode: "allowlisted",
   enabledPluginIds: ["builtin-web-search"],
@@ -109,7 +109,7 @@ const sdk = await createOpenClawAgentSdk({
   ],
 });
 
-if (typeof pluginSdk.createOpenClawAgentSdk !== "function") {
+if (typeof pluginSdk.createGeneralAgentAgentSdk !== "function") {
   throw new Error("plugin-sdk export surface is not wired to dist");
 }
 

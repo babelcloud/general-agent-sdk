@@ -1,4 +1,4 @@
-export interface OpenClawLogEvent {
+export interface GeneralAgentLogEvent {
   category:
     | "system_prompt"
     | "tool_call"
@@ -10,22 +10,22 @@ export interface OpenClawLogEvent {
   data?: Record<string, unknown>;
 }
 
-export interface OpenClawHostLogger {
-  onDebug(event: OpenClawLogEvent): void;
-  onInfo(event: OpenClawLogEvent): void;
-  onWarn(event: OpenClawLogEvent): void;
-  onError(event: OpenClawLogEvent): void;
+export interface GeneralAgentHostLogger {
+  onDebug(event: GeneralAgentLogEvent): void;
+  onInfo(event: GeneralAgentLogEvent): void;
+  onWarn(event: GeneralAgentLogEvent): void;
+  onError(event: GeneralAgentLogEvent): void;
   onRawStreamEvent?(event: Record<string, unknown>): void;
 }
 
-export interface OpenClawSessionIdentity {
+export interface GeneralAgentSessionIdentity {
   mode: "general" | "coding";
   sessionId: string;
   sessionKey: string;
 }
 
-export interface OpenClawSessionParams {
-  identity: OpenClawSessionIdentity;
+export interface GeneralAgentSessionParams {
+  identity: GeneralAgentSessionIdentity;
   systemPrompt: string;
   modelRef: string;
   sessionFile: string;
@@ -34,7 +34,7 @@ export interface OpenClawSessionParams {
   anthropicApiKey?: string;
 }
 
-export interface OpenClawTurnInput {
+export interface GeneralAgentTurnInput {
   role: "user";
   content: Array<
     | { type: "text"; text: string }
@@ -43,19 +43,19 @@ export interface OpenClawTurnInput {
   >;
 }
 
-export interface OpenClawUsageSnapshot {
+export interface GeneralAgentUsageSnapshot {
   usedInputTokens: number;
   contextWindow: number;
   usedPct: number;
   capturedAtMs: number;
 }
 
-export interface OpenClawCompactionOptions {
+export interface GeneralAgentCompactionOptions {
   usedPctThreshold?: number;
   cooldownMs?: number;
 }
 
-export interface OpenClawCurrentQueryLike {
+export interface GeneralAgentCurrentQueryLike {
   mcpServerStatus?(): Promise<unknown>;
   toggleMcpServer?(serverName: string, enabled: boolean): Promise<void>;
 }

@@ -1,8 +1,8 @@
-import type { OpenClawStreamEvent } from "../../public/events.js";
+import type { GeneralAgentStreamEvent } from "../../public/events.js";
 import type { VisionClawCompatStreamMessage } from "./types.js";
 
-export function normalizeOpenClawEventForVisionClaw(
-  event: OpenClawStreamEvent,
+export function normalizeGeneralAgentEventForVisionClaw(
+  event: GeneralAgentStreamEvent,
 ): VisionClawCompatStreamMessage {
   switch (event.kind) {
     case "assistant_delta":

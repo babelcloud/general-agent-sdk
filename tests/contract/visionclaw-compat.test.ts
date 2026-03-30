@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   createVisionClawSessionAdapter,
-  normalizeOpenClawEventForVisionClaw,
+  normalizeGeneralAgentEventForVisionClaw,
   type VisionClawCompatSessionLike,
   type VisionClawCompatStreamMessage,
 } from "../../src/compat/visionclaw/index.js";
 
 describe("compat/visionclaw contract", () => {
   it("exports a VisionClaw-compatible normalizer without renaming tools", () => {
-    const normalized = normalizeOpenClawEventForVisionClaw({
+    const normalized = normalizeGeneralAgentEventForVisionClaw({
       kind: "tool_call",
       callId: "call-1",
       toolName: "exec",

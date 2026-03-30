@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { OpenClawTool, OpenClawToolResult } from "../tool-interface.js";
+import type { GeneralAgentTool, GeneralAgentToolResult } from "../tool-interface.js";
 import { textResult, jsonResult, failedTextResult } from "../shared/tool-result.js";
 import { killProcessTree } from "../shared/shell.js";
 import {
@@ -19,12 +19,12 @@ const processSchema = z.object({
 	timeout: z.number().optional().describe("Poll wait timeout in ms (max 120000)"),
 });
 
-export function createProcessTool(): OpenClawTool {
+export function createProcessTool(): GeneralAgentTool {
 	return {
 		name: "process",
 		description: "Manage running exec sessions: list, poll, log, write, kill, remove.",
 		parameters: processSchema,
-		async execute(callId: string, params: unknown): Promise<OpenClawToolResult> {
+		async execute(callId: string, params: unknown): Promise<GeneralAgentToolResult> {
 			const parsed = processSchema.parse(params);
 			const { action, sessionId } = parsed;
 

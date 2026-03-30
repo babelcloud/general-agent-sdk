@@ -1,11 +1,11 @@
-import type { OpenClawStreamEvent } from "../../public/events.js";
-import type { OpenClawUsageSnapshot } from "../../public/types.js";
+import type { GeneralAgentStreamEvent } from "../../public/events.js";
+import type { GeneralAgentUsageSnapshot } from "../../public/types.js";
 
 export function createHostedToolSuspendEvents(params: {
   callId: string;
   toolName: string;
   input: Record<string, unknown>;
-}): OpenClawStreamEvent[] {
+}): GeneralAgentStreamEvent[] {
   return [
     {
       kind: "tool_call",
@@ -27,7 +27,7 @@ export function createHostedToolResumeEvents(params: {
   toolName: string;
   output: unknown;
   isError?: boolean;
-}): OpenClawStreamEvent[] {
+}): GeneralAgentStreamEvent[] {
   return [
     {
       kind: "tool_result",
@@ -46,9 +46,9 @@ export function createHostedToolResumeEvents(params: {
 export function createAssistantCompletionEvents(params: {
   text: string;
   stopReason?: string;
-  snapshot?: OpenClawUsageSnapshot | null;
-}): OpenClawStreamEvent[] {
-  const events: OpenClawStreamEvent[] = [];
+  snapshot?: GeneralAgentUsageSnapshot | null;
+}): GeneralAgentStreamEvent[] {
+  const events: GeneralAgentStreamEvent[] = [];
   if (params.text) {
     events.push({ kind: "assistant_delta", text: params.text });
   }
@@ -59,6 +59,6 @@ export function createAssistantCompletionEvents(params: {
   return events;
 }
 
-export function createStopEvents(reason: string): OpenClawStreamEvent[] {
+export function createStopEvents(reason: string): GeneralAgentStreamEvent[] {
   return [{ kind: "turn_complete", stopReason: reason }];
 }

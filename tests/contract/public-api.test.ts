@@ -1,22 +1,22 @@
 import { describe, expect, it } from "vitest";
 import {
-  createOpenClawAgentSdk,
-  type OpenClawAgentSdk,
-  type OpenClawAgentSdkOptions,
-  type OpenClawAgentSession,
-  type OpenClawSessionParams,
-  type OpenClawStreamEvent,
+  createGeneralAgentAgentSdk,
+  type GeneralAgentAgentSdk,
+  type GeneralAgentAgentSdkOptions,
+  type GeneralAgentAgentSession,
+  type GeneralAgentSessionParams,
+  type GeneralAgentStreamEvent,
 } from "../../src/index.js";
 
 describe("public API", () => {
   it("exports the session-first SDK surface", () => {
-    expect(typeof createOpenClawAgentSdk).toBe("function");
+    expect(typeof createGeneralAgentAgentSdk).toBe("function");
 
-    type _Sdk = OpenClawAgentSdk;
-    type _Options = OpenClawAgentSdkOptions;
-    type _Session = OpenClawAgentSession;
-    type _SessionParams = OpenClawSessionParams;
-    type _StreamEvent = OpenClawStreamEvent;
+    type _Sdk = GeneralAgentAgentSdk;
+    type _Options = GeneralAgentAgentSdkOptions;
+    type _Session = GeneralAgentAgentSession;
+    type _SessionParams = GeneralAgentSessionParams;
+    type _StreamEvent = GeneralAgentStreamEvent;
 
     expect(true).toBe(true);
   });

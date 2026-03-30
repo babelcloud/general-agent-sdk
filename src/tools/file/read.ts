@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
-import type { OpenClawTool, OpenClawToolResult } from "../tool-interface.js";
+import type { GeneralAgentTool, GeneralAgentToolResult } from "../tool-interface.js";
 import { textResult, imageResult, failedTextResult } from "../shared/tool-result.js";
 import { resolveReadPath } from "../shared/path-utils.js";
 import { truncateHead, DEFAULT_MAX_LINES } from "../shared/truncate.js";
@@ -35,14 +35,14 @@ function trimTrailingEmptyLines(text: string): string {
 	return text.replace(/\n+$/, "\n");
 }
 
-export function createReadTool(cwd: string, ops?: ReadOperations): OpenClawTool {
+export function createReadTool(cwd: string, ops?: ReadOperations): GeneralAgentTool {
 	const operations = ops ?? createDefaultReadOperations();
 
 	return {
 		name: "read",
 		description: "Read a file from the filesystem. Supports text files with optional offset/limit paging and image files (returns base64).",
 		parameters: readSchema,
-		async execute(callId: string, params: unknown): Promise<OpenClawToolResult> {
+		async execute(callId: string, params: unknown): Promise<GeneralAgentToolResult> {
 			const parsed = readSchema.parse(params);
 			const { offset, limit } = parsed;
 

@@ -1,7 +1,7 @@
-import type { OpenClawAgentSdkOptions } from "../../public/sdk.js";
+import type { GeneralAgentAgentSdkOptions } from "../../public/sdk.js";
 
-export function initializeEmbeddedPlugins(options: OpenClawAgentSdkOptions): {
-  pluginMode: OpenClawAgentSdkOptions["pluginMode"];
+export function initializeEmbeddedPlugins(options: GeneralAgentAgentSdkOptions): {
+  pluginMode: GeneralAgentAgentSdkOptions["pluginMode"];
   enabledPluginIds: string[];
 } {
   return {

@@ -1,7 +1,7 @@
-import type { OpenClawStreamEvent } from "../../public/events.js";
-import type { OpenClawAgentSession } from "../../public/session.js";
-import type { OpenClawTurnInput, OpenClawUsageSnapshot } from "../../public/types.js";
-import { normalizeOpenClawEventForVisionClaw } from "./events.js";
+import type { GeneralAgentStreamEvent } from "../../public/events.js";
+import type { GeneralAgentAgentSession } from "../../public/session.js";
+import type { GeneralAgentTurnInput, GeneralAgentUsageSnapshot } from "../../public/types.js";
+import { normalizeGeneralAgentEventForVisionClaw } from "./events.js";
 import type {
   VisionClawCompatSessionLike,
   VisionClawCompatStreamMessage,
@@ -27,7 +27,7 @@ export function createVisionClawSessionAdapter(
       try {
         yield* consumeSdkEvents(
           sdkSession,
-          sdkSession.streamTurn(toOpenClawTurnInput(content)),
+          sdkSession.streamTurn(toGeneralAgentTurnInput(content)),
           args,
           (sessionId) => {
             lastSessionId = sessionId;
@@ -41,7 +41,7 @@ export function createVisionClawSessionAdapter(
       }
     },
     injectMessage(content) {
-      return sdkSession.injectMessage(toOpenClawTurnInput(content));
+      return sdkSession.injectMessage(toGeneralAgentTurnInput(content));
     },
     closeInput() {
       inputClosed = true;
@@ -112,18 +112,18 @@ export function createVisionClawSessionAdapter(
 }
 
 async function* consumeSdkEvents(
-  sdkSession: OpenClawAgentSession,
-  events: AsyncIterable<OpenClawStreamEvent>,
+  sdkSession: GeneralAgentAgentSession,
+  events: AsyncIterable<GeneralAgentStreamEvent>,
   args: VisionClawSessionAdapterArgs,
   onSessionId: (sessionId: string) => void,
-  onUsageSnapshot: (snapshot: OpenClawUsageSnapshot | null) => void,
+  onUsageSnapshot: (snapshot: GeneralAgentUsageSnapshot | null) => void,
 ): AsyncIterable<VisionClawCompatStreamMessage> {
-  let pendingToolCall: Extract<OpenClawStreamEvent, { kind: "tool_call" }> | null = null;
+  let pendingToolCall: Extract<GeneralAgentStreamEvent, { kind: "tool_call" }> | null = null;
 
   for await (const event of events) {
     if (event.kind === "usage_snapshot") {
       onUsageSnapshot(event.snapshot);
-      yield normalizeOpenClawEventForVisionClaw(event);
+      yield normalizeGeneralAgentEventForVisionClaw(event);
       continue;
     }
 
@@ -135,7 +135,7 @@ async function* consumeSdkEvents(
       pendingToolCall = null;
       yield attachSessionId(
         args.sessionParams.identity.sessionId,
-        normalizeOpenClawEventForVisionClaw(event),
+        normalizeGeneralAgentEventForVisionClaw(event),
       );
       const execution = await args.hostedToolExecutor.execute(
         event.toolName,
@@ -163,7 +163,7 @@ async function* consumeSdkEvents(
     if (pendingToolCall) {
       yield attachSessionId(
         args.sessionParams.identity.sessionId,
-        normalizeOpenClawEventForVisionClaw(pendingToolCall),
+        normalizeGeneralAgentEventForVisionClaw(pendingToolCall),
       );
       pendingToolCall = null;
     }
@@ -175,7 +175,7 @@ async function* consumeSdkEvents(
 
     yield attachSessionId(
       args.sessionParams.identity.sessionId,
-      normalizeOpenClawEventForVisionClaw(event),
+      normalizeGeneralAgentEventForVisionClaw(event),
     );
     onSessionId(sdkSession.getSessionId());
   }
@@ -183,7 +183,7 @@ async function* consumeSdkEvents(
   if (pendingToolCall) {
     yield attachSessionId(
       args.sessionParams.identity.sessionId,
-      normalizeOpenClawEventForVisionClaw(pendingToolCall),
+      normalizeGeneralAgentEventForVisionClaw(pendingToolCall),
     );
   }
 }
@@ -199,7 +199,7 @@ function attachSessionId(
   return { ...message, session_id: sessionId };
 }
 
-function toOpenClawTurnInput(content: VisionClawCompatUserContent): OpenClawTurnInput {
+function toGeneralAgentTurnInput(content: VisionClawCompatUserContent): GeneralAgentTurnInput {
   const normalized = typeof content === "string"
     ? [{ type: "text", text: content } as const]
     : content;

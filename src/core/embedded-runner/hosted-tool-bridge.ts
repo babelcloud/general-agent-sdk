@@ -1,5 +1,5 @@
 import type { AgentTool, AgentToolResult } from "../../loop/agent-types.js";
-import type { OpenClawHostedToolDefinition } from "../../public/host-tools.js";
+import type { GeneralAgentHostedToolDefinition } from "../../public/host-tools.js";
 
 /**
  * A pending hosted tool call waiting for the host to provide a result.
@@ -28,7 +28,7 @@ export class HostedToolBridge {
    * Wrap a hosted tool definition as an AgentTool.
    * The execute() method blocks until the host provides a result.
    */
-  createAgentTool(def: OpenClawHostedToolDefinition): AgentTool {
+  createAgentTool(def: GeneralAgentHostedToolDefinition): AgentTool {
     return {
       name: def.name,
       label: def.name,
