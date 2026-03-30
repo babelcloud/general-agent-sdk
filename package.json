@@ -37,6 +37,9 @@
     "test:e2e": "node scripts/package-smoke.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "diff": "^7.0.0",
+    "partial-json": "^0.1.7",
     "zod": "^4.3.6"
   },
   "devDependencies": {
