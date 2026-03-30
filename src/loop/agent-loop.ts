@@ -3,14 +3,13 @@
  * Transforms to Message[] only at the LLM call boundary.
  */
 
-import {
-	type AssistantMessage,
-	type Context,
-	EventStream,
-	streamSimple,
-	type ToolResultMessage,
-	validateToolArguments,
-} from "@mariozechner/pi-ai";
+import type {
+	AssistantMessage,
+	Context,
+	ToolResultMessage,
+} from "../providers/anthropic-types.js";
+import { EventStream } from "../providers/event-stream.js";
+import { streamSimpleAnthropic } from "../providers/anthropic.js";
 import type {
 	AgentContext,
 	AgentEvent,
@@ -20,13 +19,20 @@ import type {
 	AgentToolCall,
 	AgentToolResult,
 	StreamFn,
-} from "./types.js";
+} from "./agent-types.js";
+
+/** Validate tool arguments — pass through for now, Zod validation at tool level */
+function validateToolArguments(
+	_tool: AgentTool<any>,
+	toolCall: AgentToolCall,
+): unknown {
+	return toolCall.arguments;
+}
 
 export type AgentEventSink = (event: AgentEvent) => Promise<void> | void;
 
 /**
  * Start an agent loop with a new prompt message.
- * The prompt is added to the context and events are emitted for it.
  */
 export function agentLoop(
 	prompts: AgentMessage[],
@@ -55,11 +61,6 @@ export function agentLoop(
 
 /**
  * Continue an agent loop from the current context without adding a new message.
- * Used for retries - context already has user message or tool results.
- *
- * **Important:** The last message in context must convert to a `user` or `toolResult` message
- * via `convertToLlm`. If it doesn't, the LLM provider will reject the request.
- * This cannot be validated here since `convertToLlm` is only called once per turn.
  */
 export function agentLoopContinue(
 	context: AgentContext,
@@ -161,7 +162,6 @@ async function runLoop(
 	streamFn?: StreamFn,
 ): Promise<void> {
 	let firstTurn = true;
-	// Check for steering messages at start (user may have typed while waiting)
 	let pendingMessages: AgentMessage[] = (await config.getSteeringMessages?.()) || [];
 
 	// Outer loop: continues when queued follow-up messages arrive after agent would stop
@@ -176,7 +176,6 @@ async function runLoop(
 				firstTurn = false;
 			}
 
-			// Process pending messages (inject before next assistant response)
 			if (pendingMessages.length > 0) {
 				for (const message of pendingMessages) {
 					await emit({ type: "message_start", message });
@@ -187,7 +186,6 @@ async function runLoop(
 				pendingMessages = [];
 			}
 
-			// Stream assistant response
 			const message = await streamAssistantResponse(currentContext, config, signal, emit, streamFn);
 			newMessages.push(message);
 
@@ -197,8 +195,7 @@ async function runLoop(
 				return;
 			}
 
-			// Check for tool calls
-			const toolCalls = message.content.filter((c) => c.type === "toolCall");
+			const toolCalls = message.content.filter((c: any) => c.type === "toolCall");
 			hasMoreToolCalls = toolCalls.length > 0;
 
 			const toolResults: ToolResultMessage[] = [];
@@ -216,15 +213,12 @@ async function runLoop(
 			pendingMessages = (await config.getSteeringMessages?.()) || [];
 		}
 
-		// Agent would stop here. Check for follow-up messages.
 		const followUpMessages = (await config.getFollowUpMessages?.()) || [];
 		if (followUpMessages.length > 0) {
-			// Set as pending so inner loop processes them
 			pendingMessages = followUpMessages;
 			continue;
 		}
 
-		// No more messages, exit
 		break;
 	}
 
@@ -233,7 +227,6 @@ async function runLoop(
 
 /**
  * Stream an assistant response from the LLM.
- * This is where AgentMessage[] gets transformed to Message[] for the LLM.
  */
 async function streamAssistantResponse(
 	context: AgentContext,
@@ -242,25 +235,21 @@ async function streamAssistantResponse(
 	emit: AgentEventSink,
 	streamFn?: StreamFn,
 ): Promise<AssistantMessage> {
-	// Apply context transform if configured (AgentMessage[] → AgentMessage[])
 	let messages = context.messages;
 	if (config.transformContext) {
 		messages = await config.transformContext(messages, signal);
 	}
 
-	// Convert to LLM-compatible messages (AgentMessage[] → Message[])
 	const llmMessages = await config.convertToLlm(messages);
 
-	// Build LLM context
 	const llmContext: Context = {
 		systemPrompt: context.systemPrompt,
 		messages: llmMessages,
 		tools: context.tools,
 	};
 
-	const streamFunction = streamFn || streamSimple;
+	const streamFunction = streamFn || streamSimpleAnthropic;
 
-	// Resolve API key (important for expiring tokens)
 	const resolvedApiKey =
 		(config.getApiKey ? await config.getApiKey(config.model.provider) : undefined) || config.apiKey;
 
@@ -340,7 +329,7 @@ async function executeToolCalls(
 	signal: AbortSignal | undefined,
 	emit: AgentEventSink,
 ): Promise<ToolResultMessage[]> {
-	const toolCalls = assistantMessage.content.filter((c) => c.type === "toolCall");
+	const toolCalls = assistantMessage.content.filter((c: any) => c.type === "toolCall") as AgentToolCall[];
 	if (config.toolExecution === "sequential") {
 		return executeToolCallsSequential(currentContext, assistantMessage, toolCalls, config, signal, emit);
 	}
@@ -462,7 +451,7 @@ async function prepareToolCall(
 	config: AgentLoopConfig,
 	signal: AbortSignal | undefined,
 ): Promise<PreparedToolCall | ImmediateToolCallOutcome> {
-	const tool = currentContext.tools?.find((t) => t.name === toolCall.name);
+	const tool = currentContext.tools?.find((t: AgentTool<any>) => t.name === toolCall.name);
 	if (!tool) {
 		return {
 			kind: "immediate",
@@ -518,7 +507,7 @@ async function executePreparedToolCall(
 			prepared.toolCall.id,
 			prepared.args as never,
 			signal,
-			(partialResult) => {
+			(partialResult: any) => {
 				updateEvents.push(
 					Promise.resolve(
 						emit({
