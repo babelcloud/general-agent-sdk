@@ -1,108 +1,85 @@
 <div align="center">
 
-# General Agent SDK
-
-### Build AI agents that actually *do things*.
-
-**Stream responses. Call tools. Manage sessions. Ship to production.**
-
-[![npm version](https://img.shields.io/npm/v/general-agent-sdk?style=flat-square&color=cb3837&label=npm)](https://www.npmjs.com/package/general-agent-sdk)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](./LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A522.14-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![Tests](https://img.shields.io/badge/tests-133%20passing-brightgreen?style=flat-square)](./tests)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/hero-banner.svg">
+  <source media="(prefers-color-scheme: light)" srcset=".github/assets/hero-banner.svg">
+  <img alt="General Agent SDK" src=".github/assets/hero-banner.svg" width="100%">
+</picture>
 
 <br/>
 
-```
-npm install general-agent-sdk
-```
+[![npm](https://img.shields.io/npm/v/general-agent-sdk?style=for-the-badge&logo=npm&logoColor=white&color=CB3837&label=)](https://www.npmjs.com/package/general-agent-sdk)
+&nbsp;
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+&nbsp;
+[![License](https://img.shields.io/badge/MIT-license-blue?style=for-the-badge)](./LICENSE)
+&nbsp;
+[![Tests](https://img.shields.io/badge/133-tests_passing-22c55e?style=for-the-badge&logo=vitest&logoColor=white)](./tests)
+&nbsp;
+[![Node](https://img.shields.io/badge/Node-%E2%89%A522-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 
 <br/>
 
-[Quick Start](#-quick-start) · [Examples](./SDK%20DOCS/) · [API Reference](./SDK%20DOCS/API-REFERENCE.md) · [Documentation](#-documentation)
+**The TypeScript SDK for building AI agents that call tools, manage sessions, and ship to production.**
+
+[Quick Start](#-get-started-in-60-seconds) · [Architecture](#-architecture) · [API Reference](./SDK%20DOCS/API-REFERENCE.md) · [Examples](./SDK%20DOCS/)
+
+<br/>
 
 </div>
 
----
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 
 ## Why General Agent SDK?
 
-Most "agent frameworks" give you wrappers around chat completions. **General Agent SDK gives you a full execution kernel** — the agent runs tools autonomously, suspends for human input, resumes across restarts, and streams every event back to your app in real time.
+Most agent frameworks give you **wrappers around chat completions** — you manage the tool loop, you track the state, you handle restarts. General Agent SDK gives you a **complete execution kernel**:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  Your App (Host)                                        │
-│                                                         │
-│   ┌──────────────────────────────────────────────────┐  │
-│   │  General Agent SDK                               │  │
-│   │                                                  │  │
-│   │   User ──→ LLM ──→ Tool ──→ LLM ──→ Tool ──→ ✅ │  │
-│   │              │        ↑        │        ↑        │  │
-│   │              │   built-in      │   hosted tool   │  │
-│   │              │   (read, exec,  │   (your code)   │  │
-│   │              │    web_search)  │                  │  │
-│   │              │                 │                  │  │
-│   │              └── stream events back to host ──→  │  │
-│   └──────────────────────────────────────────────────┘  │
-│                                                         │
-│   You control: credentials, persistence, tools, hooks   │
-└─────────────────────────────────────────────────────────┘
-```
+<div align="center">
+<br/>
 
-<table>
-<tr>
-<td width="50%">
+<img src=".github/assets/why-different.svg" alt="Comparison" width="100%">
 
-### What it does
+<br/><br/>
+</div>
 
-- **Autonomous tool loops** — agent calls tools and continues thinking until done
-- **8 built-in tools** — `read`, `write`, `edit`, `exec`, `web_search`, `web_fetch`, `apply_patch`, `subagents`
-- **Hosted tools** — define your own tools, SDK suspends & resumes
-- **Multi-turn memory** — sessions remember across turns automatically
-- **Real-time streaming** — every token, tool call, and result as events
-- **MCP integration** — plug in any MCP server (stdio or HTTP)
-- **26 lifecycle hooks** — intercept anything from model selection to tool execution
-- **Subagent delegation** — spawn child agents with scoped instructions
+> **The SDK runs the agent loop for you.** You send a message, the agent autonomously calls tools, reasons about results, calls more tools, and streams every event back — until it's done or needs your input.
 
-</td>
-<td width="50%">
+<br/>
 
-### What makes it different
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 
-- **Not a wrapper** — it's a complete agent execution engine
-- **Host-owned** — you control persistence, credentials, and policy
-- **Restart-safe** — hosted tool pauses survive process restarts
-- **Production-ready** — context compaction, file checkpoints, error boundaries
-- **Type-safe** — full TypeScript with zero `any` in public API
-- **Tested** — 133 tests + real API E2E verification
-- **Lightweight** — ~180KB packaged, 6 dependencies
-- **Escape hatch friendly** — use as much or as little as you need
+<div align="center">
 
-</td>
-</tr>
-</table>
+<img src=".github/assets/features.svg" alt="Features" width="100%">
 
----
+</div>
 
-## ⚡ Quick Start
+<br/>
 
-### 1. Install
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+<div align="center">
+
+<img src=".github/assets/quick-start-header.svg" alt="Quick Start" width="100%">
+
+</div>
+
+### Step 1 — Install
 
 ```bash
 npm install general-agent-sdk
 ```
 
-### 2. Set your API key
+### Step 2 — Set your API key
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 
-# Optional: use a proxy
+# Optional: use a custom endpoint
 # export ANTHROPIC_BASE_URL="https://your-proxy.example.com"
 ```
 
-### 3. Build your first agent
+### Step 3 — Run your first agent
 
 ```typescript
 import { createGeneralAgentSdk } from "general-agent-sdk";
@@ -110,16 +87,14 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import os from "node:os";
 
-// Initialize the SDK
+// 1. Initialize
 const sdk = await createGeneralAgentSdk({
   workspaceDir: process.cwd(),
-  stateDir: path.join(process.cwd(), ".agent-state"),
-  agentDir: path.join(process.cwd(), ".agent"),
-  profileId: "default",
-  pluginMode: "disabled",
-  logger: {
-    onDebug() {}, onInfo() {}, onWarn() {}, onError() {},
-  },
+  stateDir:     path.join(process.cwd(), ".agent-state"),
+  agentDir:     path.join(process.cwd(), ".agent"),
+  profileId:    "default",
+  pluginMode:   "disabled",
+  logger:       { onDebug() {}, onInfo() {}, onWarn() {}, onError() {} },
   sessionStore: {
     async load() { return null; },
     async save() {},
@@ -129,198 +104,225 @@ const sdk = await createGeneralAgentSdk({
   },
 });
 
-// Create a session
+// 2. Create a session
 const session = sdk.createSession({
-  identity: { mode: "general", sessionId: randomUUID(), sessionKey: "my-app:default" },
-  systemPrompt: "You are a helpful assistant.",
-  modelRef: "claude-sonnet-4-20250514",
-  sessionFile: path.join(os.tmpdir(), "session.jsonl"),
+  identity:     { mode: "general", sessionId: randomUUID(), sessionKey: "demo" },
+  systemPrompt: "You are a helpful assistant. Use tools when needed.",
+  modelRef:     "claude-sonnet-4-20250514",
+  sessionFile:  path.join(os.tmpdir(), "demo-session.jsonl"),
 });
 
-// Stream a conversation
+// 3. Stream a turn — the agent calls tools autonomously
 for await (const event of session.streamTurn({
   role: "user",
-  content: [{ type: "text", text: "What files are in the current directory?" }],
+  content: [{ type: "text", text: "List the files in the current directory" }],
 })) {
   switch (event.kind) {
-    case "assistant_delta":
-      process.stdout.write(event.text);
-      break;
-    case "tool_call":
-      console.log(`\n🔧 ${event.toolName}(${JSON.stringify(event.input)})`);
-      break;
-    case "tool_result":
-      console.log(`✅ Done`);
-      break;
-    case "turn_complete":
-      console.log(`\n\n✅ Finished (${event.stopReason})`);
-      break;
+    case "assistant_delta":  process.stdout.write(event.text);                           break;
+    case "tool_call":        console.log(`\n🔧 ${event.toolName}`);                     break;
+    case "tool_result":      console.log(`   ✅ done`);                                 break;
+    case "turn_complete":    console.log(`\n\n🏁 Turn complete (${event.stopReason})`);  break;
   }
 }
 
 await sdk.shutdown();
 ```
 
-**That's it.** The agent will autonomously read the directory, think about the results, and give you a formatted answer — all streamed in real time.
+> **That's it.** The agent autonomously reads the directory, reasons about the output, and streams a formatted answer — all in one `for await` loop.
+
+<br/>
 
 ---
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 
 ## 🎯 Core Concepts
 
 ### The Event Stream
 
-Every interaction returns an `AsyncIterable<GeneralAgentStreamEvent>`. No callbacks, no observers — just a `for await` loop:
+Every turn returns an `AsyncIterable<GeneralAgentStreamEvent>`. No callbacks, no observers — one loop handles everything:
+
+<div align="center">
+<br/>
+
+<img src=".github/assets/event-flow.svg" alt="Event Flow" width="100%">
+
+<br/><br/>
+</div>
 
 ```typescript
 for await (const event of session.streamTurn(input)) {
-  // event.kind tells you what happened:
-  //
-  //   "assistant_delta"    → streaming text chunk
-  //   "reasoning_delta"    → model thinking (extended thinking)
-  //   "tool_call"          → agent is calling a built-in tool
-  //   "tool_result"        → tool returned a result
-  //   "hosted_tool_call"   → YOUR tool was requested (SDK suspends)
-  //   "usage_snapshot"     → token usage update
-  //   "turn_complete"      → this turn is done
+  switch (event.kind) {
+    case "assistant_delta":   // → streaming text from the model
+    case "reasoning_delta":   // → model thinking (extended thinking)
+    case "tool_call":         // → built-in tool invoked
+    case "tool_result":       // → tool returned a result
+    case "hosted_tool_call":  // → YOUR tool was requested — SDK suspends ⏸️
+    case "usage_snapshot":    // → token usage update
+    case "turn_complete":     // → this turn is done ✅
+  }
 }
 ```
 
-### Hosted Tools — Your Code, Their Brain
+---
 
-Define tools that the AI can call. **You implement the logic**, the SDK handles the orchestration:
+### 🎯 Hosted Tools — Your Code, The Model's Brain
+
+Define tools the AI can call. You implement the logic; the SDK orchestrates the lifecycle:
 
 ```typescript
 const sdk = await createGeneralAgentSdk({
-  // ... other options ...
-  hostedTools: [
-    {
-      name: "get_stock_price",
-      description: "Get real-time stock price",
-      inputSchema: {
-        type: "object",
-        properties: { symbol: { type: "string" } },
-        required: ["symbol"],
-      },
+  // ...
+  hostedTools: [{
+    name: "get_weather",
+    description: "Get current weather for a city",
+    inputSchema: {
+      type: "object",
+      properties: { city: { type: "string" } },
+      required: ["city"],
     },
-  ],
+  }],
 });
 
-// Handle tool calls
-for await (const event of session.streamTurn(userMessage)) {
+for await (const event of session.streamTurn(userMsg)) {
   if (event.kind === "hosted_tool_call") {
-    // SDK automatically suspends here ⏸️
+    //  SDK suspends automatically ⏸️
+    const weather = await getWeather(event.input.city);
 
-    // You execute your logic
-    const price = await fetchStockPrice(event.input.symbol);
-
-    // Resume the agent with the result ▶️
-    for await (const resumed of session.submitHostedToolResult({
+    //  Resume with your result ▶️
+    for await (const e of session.submitHostedToolResult({
       callId: event.callId,
-      output: { price, currency: "USD" },
+      output: weather,
     })) {
-      if (resumed.kind === "assistant_delta") process.stdout.write(resumed.text);
+      if (e.kind === "assistant_delta") process.stdout.write(e.text);
     }
     break;
   }
 }
 ```
 
-### Multi-Turn Sessions
+> **Restart-safe:** Hosted tool pauses survive process restarts. The SDK snapshots context and resumes correctly — even with multi-tool parallel calls.
 
-Sessions automatically maintain conversation history. The agent remembers everything:
+---
+
+### 💬 Multi-Turn Memory
+
+Sessions automatically maintain conversation history:
 
 ```typescript
 // Turn 1
-await consume(session.streamTurn({
+for await (const e of session.streamTurn({
   role: "user",
-  content: [{ type: "text", text: "My name is Alice and I like TypeScript." }],
-}));
+  content: [{ type: "text", text: "My name is Alice. I'm building a TypeScript app." }],
+})) { /* ... */ }
 
-// Turn 2 — the agent remembers!
-await consume(session.streamTurn({
+// Turn 2 — the agent remembers everything
+for await (const e of session.streamTurn({
   role: "user",
-  content: [{ type: "text", text: "What's my name and what do I like?" }],
-}));
-// → "Your name is Alice and you like TypeScript."
+  content: [{ type: "text", text: "What's my name and what am I building?" }],
+})) { /* ... */ }
+// ➜ "Your name is Alice and you're building a TypeScript app."
 ```
 
-### Hooks — Intercept Everything
+---
 
-26 hooks let you observe, modify, or block any part of the agent lifecycle:
+### 🪝 Hooks — Intercept Everything
+
+26 hooks let you observe, modify, or block any lifecycle event:
 
 ```typescript
 const sdk = await createGeneralAgentSdk({
-  // ...
   hooks: [
-    // Dynamically switch models
+    // 🔀 Dynamic model routing
     {
       pluginId: "my-app",
       hookName: "before_model_resolve",
-      handler: (event) => ({
-        modelOverride: isComplexTask(event.prompt)
-          ? "claude-opus-4-20250514"
-          : "claude-sonnet-4-20250514",
+      handler: (ev) => ({
+        modelOverride: needsPower(ev) ? "claude-opus-4-20250514" : "claude-sonnet-4-20250514",
       }),
     },
-    // Block dangerous tool calls
+
+    // 🛡️ Safety guardrails
     {
       pluginId: "my-app",
       hookName: "before_tool_call",
-      handler: (event) => {
-        if (event.toolName === "exec" && event.params.command?.includes("rm -rf")) {
+      handler: (ev) => {
+        if (ev.toolName === "exec" && ev.params.command?.includes("rm -rf"))
           return { block: true, blockReason: "Dangerous command blocked" };
-        }
       },
     },
-    // Audit all LLM calls
+
+    // 📊 Usage audit trail
     {
       pluginId: "my-app",
       hookName: "llm_output",
-      handler: (event) => {
-        console.log(`[audit] ${event.model}: ${event.usage?.input}in/${event.usage?.output}out tokens`);
+      handler: (ev) => {
+        db.insert({ model: ev.model, tokens: ev.usage?.input + ev.usage?.output });
       },
     },
   ],
 });
 ```
 
+<details>
+<summary><strong>📋 Full hook reference (19 SDK-native + 7 host-bridged)</strong></summary>
+
+<br/>
+
+**SDK-native hooks** — auto-fired by the runtime:
+
+| Hook | Modifiable | Fires when... |
+|:-----|:---:|:---|
+| `before_model_resolve` | ✅ | Model selection begins |
+| `before_prompt_build` | ✅ | System prompt is being assembled |
+| `before_agent_start` | ✅ | Agent run is about to begin |
+| `llm_input` | — | Request sent to LLM |
+| `llm_output` | — | Response received from LLM |
+| `agent_end` | — | Agent run completed |
+| `before_tool_call` | ✅ | Tool is about to execute |
+| `after_tool_call` | — | Tool execution finished |
+| `tool_result_persist` | ✅ | Tool result being saved to transcript |
+| `before_message_write` | ✅ | Message being written to history |
+| `session_start` | — | Session first activated |
+| `session_end` | — | Session completed |
+| `before_compaction` | — | Context compaction starting |
+| `after_compaction` | — | Context compaction finished |
+| `before_reset` | — | Session about to clear |
+| `subagent_spawning` | ✅ | Child agent creation requested |
+| `subagent_delivery_target` | ✅ | Routing child agent delivery |
+| `subagent_spawned` | — | Child agent created |
+| `subagent_ended` | — | Child agent finished |
+
+**Host-bridged hooks** — you trigger these via `sdk.emitHook()`:
+
+| Hook | Purpose |
+|:-----|:--------|
+| `inbound_claim` | Incoming message routing |
+| `before_dispatch` | Pre-dispatch filtering |
+| `message_received` | Message arrival notification |
+| `message_sending` | Modify/cancel outgoing messages |
+| `message_sent` | Delivery confirmation |
+| `gateway_start` | Gateway lifecycle start |
+| `gateway_stop` | Gateway shutdown |
+
+</details>
+
 ---
 
-## 🧰 Built-in Tools
+### 🔌 MCP Integration
 
-The agent comes pre-loaded with powerful tools:
-
-| Tool | What it does |
-|------|-------------|
-| `read` | Read file contents (with line ranges) |
-| `write` | Create or overwrite files |
-| `edit` | Surgical file edits with diff |
-| `apply_patch` | Apply unified diffs |
-| `exec` | Run shell commands |
-| `web_search` | Search the web (DuckDuckGo / Brave) |
-| `web_fetch` | Fetch and parse web pages |
-| `subagents` | Delegate tasks to child agents |
-
-The agent decides which tools to use. You can restrict available tools per session, and every tool call flows through the `before_tool_call` / `after_tool_call` hooks.
-
----
-
-## 🔌 MCP Integration
-
-Plug in any [Model Context Protocol](https://modelcontextprotocol.io/) server:
+Plug in any [Model Context Protocol](https://modelcontextprotocol.io/) server — tools appear alongside built-ins:
 
 ```typescript
-// Local process
 session.setDynamicMcpServers({
+  // Local process (stdio)
   filesystem: {
     transport: "stdio",
     command: "npx",
     args: ["-y", "@modelcontextprotocol/server-filesystem", "/data"],
   },
-});
 
-// Remote HTTP endpoint
-session.setDynamicMcpServers({
+  // Remote endpoint (HTTP)
   my_api: {
     transport: "http",
     url: "https://mcp.example.com/api",
@@ -329,222 +331,190 @@ session.setDynamicMcpServers({
 });
 ```
 
-MCP tools show up alongside built-in tools. The agent uses them seamlessly.
-
 ---
 
-## 🤖 Subagents
+### 🤖 Subagents
 
-The agent can spawn child agents to divide and conquer:
+The agent can spawn scoped child agents to divide and conquer complex tasks:
 
 ```typescript
 const session = sdk.createSession({
+  systemPrompt: `You are a tech lead. Delegate tasks using the subagents tool.`,
   // ...
-  systemPrompt: `You are a project manager.
-    Use the subagents tool to delegate tasks to specialists.`,
 });
 
 // The agent will autonomously:
-// 1. Break the task into subtasks
-// 2. Spawn child agents with scoped instructions
-// 3. Collect results
+// 1. Analyze the task
+// 2. Spawn child agents with scoped instructions + tools
+// 3. Collect results from each child
 // 4. Synthesize a final answer
 ```
 
-Each subagent gets its own independent message history and scoped tool access. The `subagents` tool is excluded from children to prevent infinite recursion.
+Each child gets **independent message history** and **scoped tool access**. The `subagents` tool is excluded from children to prevent infinite recursion. Four lifecycle hooks fire automatically: `subagent_spawning` → `subagent_spawned` → `subagent_ended`.
 
 ---
 
-## 📊 Session Management
+### 📊 Session Management
 
 ```typescript
-// Create
-const session = sdk.createSession({ ... });
-
-// Resume by ID
-const resumed = await sdk.resumeSession("session-123");
-
-// Fork (branch from existing conversation)
-const forked = await sdk.forkSession("session-123", { ... });
-
-// List all sessions
-const sessions = await sdk.listSessions();
-
-// Read transcript history
-const history = await sdk.readSessionHistory("session-123");
-
-// Reset (clear history, keep config)
-await session.reset("starting_fresh");
-
-// Check token usage
-const usage = session.getUsageSnapshot();
-// → { usedInputTokens: 1234, contextWindow: 200000, usedPct: 0.6 }
+const session  = sdk.createSession({ ... });          // Create
+const resumed  = await sdk.resumeSession("sess-123"); // Resume
+const forked   = await sdk.forkSession("sess-123", {  // Fork
+  identity: { ... },
+});
+const sessions = await sdk.listSessions();             // List all
+const history  = await sdk.readSessionHistory("id");   // Read transcript
+await session.reset("context_overflow");               // Reset
+const usage    = session.getUsageSnapshot();            // Token usage
 ```
 
-### Context Compaction
-
-Long conversations don't overflow — the SDK compacts automatically:
+**Context Compaction** — long conversations don't overflow:
 
 ```typescript
 await session.maybeCompactByTokens({
-  usedPctThreshold: 85,  // trigger at 85% usage
+  usedPctThreshold: 85,  // trigger at 85% context usage
   cooldownMs: 60_000,    // min 60s between compactions
 });
 ```
 
-### File Checkpoints
-
-Every file write creates an automatic checkpoint. Roll back anytime:
+**File Checkpoints** — every write creates an automatic rollback point:
 
 ```typescript
 const checkpoints = await session.listCheckpoints();
 await session.restoreCheckpoint(checkpoints[0].id);
 ```
 
+<br/>
+
 ---
 
-## 📖 Documentation
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 
-| Resource | Description |
-|----------|-------------|
-| [`SDK DOCS/README.md`](./SDK%20DOCS/README.md) | Full documentation index |
-| [`SDK DOCS/API-REFERENCE.md`](./SDK%20DOCS/API-REFERENCE.md) | Complete API reference |
-| [`SDK DOCS/01-hello-world.ts`](./SDK%20DOCS/01-hello-world.ts) | Your first agent |
-| [`SDK DOCS/02-multi-turn-chat.ts`](./SDK%20DOCS/02-multi-turn-chat.ts) | Interactive multi-turn REPL |
-| [`SDK DOCS/03-hosted-tools.ts`](./SDK%20DOCS/03-hosted-tools.ts) | Custom tool integration |
-| [`SDK DOCS/04-session-lifecycle.ts`](./SDK%20DOCS/04-session-lifecycle.ts) | Session management |
-| [`SDK DOCS/05-hooks.ts`](./SDK%20DOCS/05-hooks.ts) | Lifecycle hooks |
-| [`SDK DOCS/06-mcp-servers.ts`](./SDK%20DOCS/06-mcp-servers.ts) | MCP server integration |
-| [`SDK DOCS/07-compaction.ts`](./SDK%20DOCS/07-compaction.ts) | Context window management |
-| [`SDK DOCS/08-subagents.ts`](./SDK%20DOCS/08-subagents.ts) | Subagent delegation |
+## 🏗 Architecture
 
-All examples are **runnable** — just set your API key and go:
+<div align="center">
+<br/>
+
+<img src=".github/assets/architecture.svg" alt="Architecture" width="100%">
+
+<br/><br/>
+</div>
+
+<details>
+<summary><strong>📁 Repository structure</strong></summary>
+
+```
+general-agent-sdk/
+├── src/
+│   ├── index.ts                → Package entry point
+│   ├── public/                 → Stable public API surface
+│   │   ├── sdk.ts              → createGeneralAgentSdk()
+│   │   ├── session.ts          → GeneralAgentSession
+│   │   ├── events.ts           → GeneralAgentStreamEvent
+│   │   ├── hooks.ts            → 26 hook type definitions
+│   │   ├── types.ts            → Shared types
+│   │   ├── host-tools.ts       → Hosted tool definitions
+│   │   └── persistence.ts      → Storage adapter interface
+│   ├── core/
+│   │   ├── embedded-runner/    → Session factory + runtime
+│   │   ├── compaction/         → Context window compaction
+│   │   ├── mcp/                → MCP client (stdio + HTTP)
+│   │   ├── model/              → Model context window resolution
+│   │   ├── plugins/            → Hook runner engine
+│   │   ├── sessions/           → Metadata index + transcript repair
+│   │   └── checkpoints/        → File checkpoint manager
+│   ├── tools/                  → Built-in tool implementations
+│   ├── loop/                   → Agent execution loop
+│   └── providers/              → LLM provider adapters
+├── SDK DOCS/                   → Runnable examples + API reference
+├── tests/                      → 133 tests (unit / integration / contract / e2e)
+└── manifests/                  → Upstream provenance tracking
+```
+
+</details>
+
+---
+
+## 📋 Event Reference
+
+| Event | Payload | Description |
+|:------|:--------|:------------|
+| `assistant_delta` | `{ text }` | Streaming text chunk from the model |
+| `reasoning_delta` | `{ text }` | Extended thinking (chain-of-thought) |
+| `reasoning_end` | — | Thinking phase complete |
+| `tool_call` | `{ callId, toolName, input }` | Built-in tool invoked by the agent |
+| `tool_result` | `{ callId, toolName, output }` | Tool execution result |
+| `tool_error` | `{ callId, toolName, error }` | Tool execution failed |
+| `hosted_tool_call` | `{ callId, toolName, input }` | **Your** tool requested — SDK suspends |
+| `usage_snapshot` | `{ snapshot }` | Token usage update |
+| `compaction_started` | `{ reason }` | Context compaction in progress |
+| `compaction_finished` | `{ reason, tokensAfter? }` | Compaction complete |
+| `turn_complete` | `{ stopReason }` | Turn finished |
+
+---
+
+## 🧰 Built-in Tools
+
+| Tool | Description | Category |
+|:-----|:------------|:---------|
+| `read` | Read file contents with optional line ranges | File I/O |
+| `write` | Create or overwrite files | File I/O |
+| `edit` | Surgical string-replace edits | File I/O |
+| `apply_patch` | Apply unified diff patches | File I/O |
+| `exec` | Execute shell commands | System |
+| `web_search` | Search the web (Brave / DuckDuckGo) | Web |
+| `web_fetch` | Fetch and parse web pages | Web |
+| `subagents` | Spawn scoped child agents | Orchestration |
+
+---
+
+## 📖 Examples
+
+All examples are **runnable** TypeScript files:
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 npx tsx "SDK DOCS/01-hello-world.ts"
 ```
 
----
+| # | Example | What it covers |
+|:--|:--------|:---------------|
+| 01 | [`hello-world.ts`](./SDK%20DOCS/01-hello-world.ts) | Minimal agent, first `streamTurn()` call |
+| 02 | [`multi-turn-chat.ts`](./SDK%20DOCS/02-multi-turn-chat.ts) | Interactive REPL with memory |
+| 03 | [`hosted-tools.ts`](./SDK%20DOCS/03-hosted-tools.ts) | Custom tool with suspend/resume |
+| 04 | [`session-lifecycle.ts`](./SDK%20DOCS/04-session-lifecycle.ts) | Create, resume, fork, reset |
+| 05 | [`hooks.ts`](./SDK%20DOCS/05-hooks.ts) | Lifecycle hooks in action |
+| 06 | [`mcp-servers.ts`](./SDK%20DOCS/06-mcp-servers.ts) | Dynamic MCP integration |
+| 07 | [`compaction.ts`](./SDK%20DOCS/07-compaction.ts) | Context window management |
+| 08 | [`subagents.ts`](./SDK%20DOCS/08-subagents.ts) | Child agent delegation |
 
-## 🏗️ Architecture
-
-```
-general-agent-sdk/
-├── src/
-│   ├── index.ts              → Package entry point
-│   ├── public/               → Stable public API types
-│   │   ├── sdk.ts            → createGeneralAgentSdk()
-│   │   ├── session.ts        → GeneralAgentSession interface
-│   │   ├── events.ts         → Stream event types
-│   │   ├── hooks.ts          → 26 hook definitions
-│   │   ├── types.ts          → Shared types
-│   │   ├── host-tools.ts     → Hosted tool types
-│   │   └── persistence.ts    → Storage adapter
-│   ├── core/                 → Runtime implementation
-│   │   ├── embedded-runner/  → Session + factory
-│   │   ├── compaction/       → Context compaction
-│   │   ├── mcp/              → MCP client (stdio + http)
-│   │   ├── model/            → Model context windows
-│   │   ├── plugins/          → Hook runner
-│   │   ├── sessions/         → Metadata + transcript repair
-│   │   └── checkpoints/      → File checkpoint manager
-│   ├── tools/                → Built-in tool implementations
-│   ├── loop/                 → Agent execution loop
-│   └── providers/            → LLM provider adapters
-├── SDK DOCS/                 → Examples + API reference
-├── tests/                    → 133 tests (unit/integration/contract/e2e)
-└── manifests/                → Upstream provenance tracking
-```
+> 📚 Full API documentation: [`SDK DOCS/API-REFERENCE.md`](./SDK%20DOCS/API-REFERENCE.md)
 
 ---
 
 ## 🔧 Development
 
 ```bash
-# Install
-pnpm install
-
-# Type check
-pnpm run check
-
-# Build
-pnpm run build
-
-# Run tests
-pnpm run test          # 133 unit + integration tests
-pnpm run test:e2e      # package smoke test
-
-# Verify upstream provenance
-node scripts/verify-upstream-snapshot.mjs
+pnpm install                            # Install dependencies
+pnpm run check                          # Type check
+pnpm run build                          # Build
+pnpm run test                           # 133 unit + integration tests
+pnpm run test:e2e                       # Package smoke test
+node scripts/verify-upstream-snapshot.mjs  # Verify provenance
 ```
 
 ---
 
-## 📋 Event Reference
+<div align="center">
 
-| Event | Payload | When |
-|-------|---------|------|
-| `assistant_delta` | `{ text }` | Each streaming text chunk |
-| `reasoning_delta` | `{ text }` | Model thinking (extended thinking) |
-| `reasoning_end` | — | Thinking complete |
-| `tool_call` | `{ callId, toolName, input }` | Built-in tool invoked |
-| `tool_result` | `{ callId, toolName, output }` | Tool returned result |
-| `tool_error` | `{ callId, toolName, error }` | Tool failed |
-| `hosted_tool_call` | `{ callId, toolName, input }` | Your tool requested (SDK suspends) |
-| `usage_snapshot` | `{ snapshot }` | Token usage update |
-| `compaction_started` | `{ reason }` | Context compaction begins |
-| `compaction_finished` | `{ reason, tokensAfter? }` | Compaction complete |
-| `turn_complete` | `{ stopReason }` | Turn finished |
+<br/>
 
----
+**MIT** · Built by [BabelCloud](https://github.com/babelcloud)
 
-## 🪝 Hook Reference
+<br/>
 
-<details>
-<summary><strong>19 SDK-native hooks</strong> (auto-fired by runtime)</summary>
+<sub>If this project helps you build something cool, give it a ⭐ — it helps others find it too.</sub>
 
-| Hook | Can modify? | Description |
-|------|:-----------:|-------------|
-| `before_model_resolve` | ✅ | Override model selection |
-| `before_prompt_build` | ✅ | Inject context into prompts |
-| `before_agent_start` | ✅ | Final pre-run modifications |
-| `llm_input` | — | Observe LLM request |
-| `llm_output` | — | Observe LLM response + usage |
-| `agent_end` | — | Run completed |
-| `before_tool_call` | ✅ | Modify args or block execution |
-| `after_tool_call` | — | Observe tool result |
-| `tool_result_persist` | ✅ | Modify persisted tool result |
-| `before_message_write` | ✅ | Modify or block transcript writes |
-| `session_start` | — | Session first used |
-| `session_end` | — | Session done |
-| `before_compaction` | — | Compaction starting |
-| `after_compaction` | — | Compaction finished |
-| `before_reset` | — | Session about to reset |
-| `subagent_spawning` | ✅ | Block subagent creation |
-| `subagent_delivery_target` | ✅ | Override delivery routing |
-| `subagent_spawned` | — | Child agent created |
-| `subagent_ended` | — | Child agent finished |
+<br/><br/>
 
-</details>
-
-<details>
-<summary><strong>7 Host-bridged hooks</strong> (triggered via <code>sdk.emitHook()</code>)</summary>
-
-| Hook | Description |
-|------|-------------|
-| `inbound_claim` | Incoming message routing |
-| `before_dispatch` | Pre-dispatch filtering |
-| `message_received` | Message received |
-| `message_sending` | Modify/cancel outgoing messages |
-| `message_sent` | Message delivery confirmation |
-| `gateway_start` | Gateway lifecycle |
-| `gateway_stop` | Gateway shutdown |
-
-</details>
-
----
-
-## License
-
-[MIT](./LICENSE) — built by [BabelCloud](https://github.com/babelcloud)
+</div>

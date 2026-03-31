@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 60" fill="none">
+  <defs>
+    <linearGradient id="qsBg" x1="0" y1="0" x2="960" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0f0f23"/>
+      <stop offset="100%" stop-color="#0d1117"/>
+    </linearGradient>
+    <linearGradient id="qsLine" x1="0" y1="0" x2="960" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00d4ff" stop-opacity="0"/>
+      <stop offset="20%" stop-color="#00d4ff"/>
+      <stop offset="50%" stop-color="#7b61ff"/>
+      <stop offset="80%" stop-color="#ff6b9d"/>
+      <stop offset="100%" stop-color="#ff6b9d" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="roundQs"><rect width="960" height="60" rx="8"/></clipPath>
+  </defs>
+  <g clip-path="url(#roundQs)">
+    <rect width="960" height="60" fill="url(#qsBg)"/>
+    <rect x="0" y="56" width="960" height="4" fill="url(#qsLine)" opacity="0.5"/>
+    <text x="480" y="38" text-anchor="middle" font-family="'SF Pro Display', system-ui, sans-serif" font-size="22" font-weight="800" fill="white" letter-spacing="0.5">¡ Get Started in 60 Seconds</text>
+  </g>
+</svg>
