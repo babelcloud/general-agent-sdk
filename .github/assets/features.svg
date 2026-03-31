@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 160" fill="none">
+  <defs>
+    <linearGradient id="bgFeat" x1="0" y1="0" x2="960" y2="160" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0f0f23"/>
+      <stop offset="100%" stop-color="#0d1117"/>
+    </linearGradient>
+    <clipPath id="roundFeat">
+      <rect width="960" height="160" rx="12"/>
+    </clipPath>
+  </defs>
+  
+  <g clip-path="url(#roundFeat)">
+    <rect width="960" height="160" fill="url(#bgFeat)"/>
+    
+    <!-- Feature cards  4 columns -->
+    <!-- Row 1 -->
+    <!-- Streaming -->
+    <rect x="24" y="16" width="218" height="56" rx="8" fill="#00d4ff" fill-opacity="0.06" stroke="#00d4ff" stroke-opacity="0.15"/>
+    <text x="44" y="38" font-family="system-ui" font-size="14">°</text>
+    <text x="66" y="38" font-family="'SF Pro Display', system-ui" font-size="12" font-weight="600" fill="#00d4ff">Real-time Streaming</text>
+    <text x="66" y="56" font-family="system-ui" font-size="9" fill="#667085">Every token, tool call, result as events</text>
+    
+    <!-- Tools -->
+    <rect x="256" y="16" width="218" height="56" rx="8" fill="#7b61ff" fill-opacity="0.06" stroke="#7b61ff" stroke-opacity="0.15"/>
+    <text x="276" y="38" font-family="system-ui" font-size="14">='</text>
+    <text x="298" y="38" font-family="'SF Pro Display', system-ui" font-size="12" font-weight="600" fill="#9d8aff">8 Built-in Tools</text>
+    <text x="298" y="56" font-family="system-ui" font-size="9" fill="#667085">read ∑ write ∑ exec ∑ web + more</text>
+    
+    <!-- Hosted Tools -->
+    <rect x="488" y="16" width="218" height="56" rx="8" fill="#ff6b9d" fill-opacity="0.06" stroke="#ff6b9d" stroke-opacity="0.15"/>
+    <text x="508" y="38" font-family="system-ui" font-size="14"><Ø</text>
+    <text x="530" y="38" font-family="'SF Pro Display', system-ui" font-size="12" font-weight="600" fill="#ff6b9d">Hosted Tools</text>
+    <text x="530" y="56" font-family="system-ui" font-size="9" fill="#667085">Your code, suspend/resume safe</text>
+    
+    <!-- Sessions -->
+    <rect x="720" y="16" width="218" height="56" rx="8" fill="#22c55e" fill-opacity="0.06" stroke="#22c55e" stroke-opacity="0.15"/>
+    <text x="740" y="38" font-family="system-ui" font-size="14">=æ</text>
+    <text x="762" y="38" font-family="'SF Pro Display', system-ui" font-size="12" font-weight="600" fill="#22c55e">Multi-turn Memory</text>
+    <text x="762" y="56" font-family="system-ui" font-size="9" fill="#667085">Automatic conversation history</text>
+    
+    <!-- Row 2 -->
+    <!-- Hooks -->
+    <rect x="24" y="88" width="218" height="56" rx="8" fill="#f59e0b" fill-opacity="0.06" stroke="#f59e0b" stroke-opacity="0.15"/>
+    <text x="44" y="110" font-family="system-ui" font-size="14">>ù</text>
+    <text x="66" y="110" font-family="'SF Pro Display', system-ui" font-size="12" font-weight="600" fill="#f59e0b">26 Lifecycle Hooks</text>
+    <text x="66" y="128" font-family="system-ui" font-size="9" fill="#667085">Intercept model, tools, sessions</text>
+    
+    <!-- MCP -->
+    <rect x="256" y="88" width="218" height="56" rx="8" fill="#00d4ff" fill-opacity="0.06" stroke="#00d4ff" stroke-opacity="0.15"/>
+    <text x="276" y="110" font-family="system-ui" font-size="14">=</text>
+    <text x="298" y="110" font-family="'SF Pro Display', system-ui" font-size="12" font-weight="600" fill="#00d4ff">MCP Integration</text>
+    <text x="298" y="128" font-family="system-ui" font-size="9" fill="#667085">stdio + HTTP, hot-pluggable</text>
+    
+    <!-- Subagents -->
+    <rect x="488" y="88" width="218" height="56" rx="8" fill="#7b61ff" fill-opacity="0.06" stroke="#7b61ff" stroke-opacity="0.15"/>
+    <text x="508" y="110" font-family="system-ui" font-size="14">></text>
+    <text x="530" y="110" font-family="'SF Pro Display', system-ui" font-size="12" font-weight="600" fill="#9d8aff">Subagent Runtime</text>
+    <text x="530" y="128" font-family="system-ui" font-size="9" fill="#667085">Scoped child agents with isolation</text>
+    
+    <!-- Production -->
+    <rect x="720" y="88" width="218" height="56" rx="8" fill="#ff6b9d" fill-opacity="0.06" stroke="#ff6b9d" stroke-opacity="0.15"/>
+    <text x="740" y="110" font-family="system-ui" font-size="14">=·</text>
+    <text x="762" y="110" font-family="'SF Pro Display', system-ui" font-size="12" font-weight="600" fill="#ff6b9d">Production Ready</text>
+    <text x="762" y="128" font-family="system-ui" font-size="9" fill="#667085">Compaction, checkpoints, restart-safe</text>
+  </g>
+</svg>

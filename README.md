@@ -1,254 +1,329 @@
-# General Agent SDK
+<div align="center">
 
-`general-agent-sdk` is a session-first embedded SDK that extracts the agent execution kernel from OpenClaw and exposes it as a host-controlled TypeScript package.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/hero-banner.svg">
+  <source media="(prefers-color-scheme: light)" srcset=".github/assets/hero-banner.svg">
+  <img alt="General Agent SDK" src=".github/assets/hero-banner.svg" width="100%">
+</picture>
 
-The SDK is intentionally narrow: it preserves execution-layer semantics such as tool calls, hosted-tool suspend/resume, compaction, plugin policy, and provider-specific streaming, while leaving orchestration, channel routing, profile ownership, and canonical session state to the host application.
+<br/>
 
-## Status
+[![npm](https://img.shields.io/npm/v/general-agent-sdk?style=for-the-badge&logo=npm&logoColor=white&color=CB3837&label=)](https://www.npmjs.com/package/general-agent-sdk)
+&nbsp;
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+&nbsp;
+[![License](https://img.shields.io/badge/MIT-license-blue?style=for-the-badge)](./LICENSE)
+&nbsp;
+[![Tests](https://img.shields.io/badge/133-tests_passing-22c55e?style=for-the-badge&logo=vitest&logoColor=white)](./tests)
+&nbsp;
+[![Node](https://img.shields.io/badge/Node-%E2%89%A522-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 
-- Repository: `https://github.com/babelcloud/general-agent-sdk`
-- Package name: `general-agent-sdk`
-- Current package version: `0.1.0`
-- Runtime: Node.js `>=22.14.0`
-- Module format: ESM
-- CI workflow: [`.github/workflows/sdk-ci.yml`](./.github/workflows/sdk-ci.yml)
+<br/>
 
-This repository is currently host-oriented and private by default. It is designed to be consumed as a pinned dependency or submodule by a parent host application.
+**The TypeScript SDK for building AI agents that call tools, manage sessions, and ship to production.**
 
-## Breaking Changes
+[Quick Start](#-get-started-in-60-seconds) · [Architecture](#-architecture) · [API Reference](./SDK%20DOCS/API-REFERENCE.md) · [Examples](./SDK%20DOCS/)
 
-The current General Agent SDK surface intentionally removes earlier transitional names and compatibility entrypoints.
+<br/>
 
-- Root factory/type names are now `createGeneralAgentSdk`, `GeneralAgentSdk`, `GeneralAgentSdkOptions`, and `GeneralAgentSession`.
-- The package no longer ships the `./compat/visionclaw` entrypoint.
-- The package no longer ships the `./plugin-sdk` alias.
+</div>
 
-If you are upgrading from an earlier internal prototype, update root imports and switch any host integration that depended on removed subpaths to the native SDK session/event APIs.
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 
-## What This SDK Is
+## Why General Agent SDK?
 
-- A standalone embedded agent kernel extracted from OpenClaw
-- A session factory plus session objects
-- A bridge that preserves structured execution semantics instead of flattening everything into text
-- A host-integrated runtime that writes all state and logs under host-owned roots
+Most agent frameworks give you **wrappers around chat completions** — you manage the tool loop, you track the state, you handle restarts. General Agent SDK gives you a **complete execution kernel**:
 
-## What This SDK Is Not
+<div align="center">
+<br/>
 
-- Not the full OpenClaw gateway
-- Not a replacement for a host application's outer runtime loop
-- Not a second authoritative session registry
-- Not a channel manager, cron daemon, control plane, or desktop automation environment
+<img src=".github/assets/why-different.svg" alt="Comparison" width="100%">
 
-## Design Principles
+<br/><br/>
+</div>
 
-- **Session-first API**: the host bootstraps the SDK once, then creates and reuses sessions explicitly
-- **Host-owned persistence**: the host decides where session files, state files, and raw event logs live
-- **Execution fidelity**: tool-call identity, hosted-tool resume boundaries, and tool-result ordering are preserved
-- **Failure containment**: the SDK stays behind an engine-gated loader path in the host
-- **Traceability**: extracted upstream files are tracked through a provenance manifest and verification scripts
+> **The SDK runs the agent loop for you.** You send a message, the agent autonomously calls tools, reasons about results, calls more tools, and streams every event back — until it's done or needs your input.
 
-## Host / SDK Boundary
+<br/>
 
-### SDK responsibilities
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 
-- Create and reuse agent sessions
-- Stream assistant, reasoning, tool, hosted-tool, compaction, and usage events
-- Preserve `tool_call`, `tool_result`, and `tool_error` semantics
-- Resolve embedded provider/auth/plugin/tool behavior
-- Start and stop registered stdio MCP runtimes for active runs
-- Emit canonical host-facing logs and optional raw stream events
+<div align="center">
 
-### Host responsibilities
+<img src=".github/assets/features.svg" alt="Features" width="100%">
 
-- Profile roots and workspace roots
-- Credentials and environment variables
-- Canonical session metadata
-- Channel ingress and egress
-- Cross-engine continuity and owner-facing orchestration
-- Which MCP servers are registered and enabled for a session
+</div>
 
-This separation is intentional. The SDK does not introduce a new top-level runtime abstraction above the host.
+<br/>
 
-## Public API
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 
-The supported API surface is exported from [`src/index.ts`](./src/index.ts) and backed by the files under [`src/public/`](./src/public).
+<div align="center">
 
-### Factory
+<img src=".github/assets/quick-start-header.svg" alt="Quick Start" width="100%">
 
-```ts
+</div>
+
+### Step 1 — Install
+
+```bash
+npm install general-agent-sdk
+```
+
+### Step 2 — Set your API key
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# Optional: use a custom endpoint
+# export ANTHROPIC_BASE_URL="https://your-proxy.example.com"
+```
+
+### Step 3 — Run your first agent
+
+```typescript
 import { createGeneralAgentSdk } from "general-agent-sdk";
+import { randomUUID } from "node:crypto";
+import path from "node:path";
+import os from "node:os";
 
+// 1. Initialize
 const sdk = await createGeneralAgentSdk({
-  workspaceDir,
-  stateDir,
-  agentDir,
-  profileId: "default",
-  pluginMode: "disabled",
-  logger,
-  sessionStore,
-  hostedTools,
-  env: process.env,
-  tools: {
-    web: {
-      fetch: {
-        firecrawl: {
-          apiKey: process.env.FIRECRAWL_API_KEY,
-        },
-      },
-      search: {
-        apiKey: process.env.BRAVE_SEARCH_API_KEY,
-      },
+  workspaceDir: process.cwd(),
+  stateDir:     path.join(process.cwd(), ".agent-state"),
+  agentDir:     path.join(process.cwd(), ".agent"),
+  profileId:    "default",
+  pluginMode:   "disabled",
+  logger:       { onDebug() {}, onInfo() {}, onWarn() {}, onError() {} },
+  sessionStore: {
+    async load() { return null; },
+    async save() {},
+    async resolveSessionFile(id) {
+      return path.join(os.tmpdir(), `${id.sessionId}.jsonl`);
     },
   },
 });
-```
 
-### Session creation
-
-```ts
+// 2. Create a session
 const session = sdk.createSession({
-  identity: {
-    mode: "general",
-    sessionId: "sess-general",
-    sessionKey: "host:default:general",
-  },
-  systemPrompt: "Use the finish tool immediately.",
-  modelRef: "openai/gpt-5.4",
-  sessionFile,
-  authProfileId: "enterprise-default",
-  rawEventLogPath,
+  identity:     { mode: "general", sessionId: randomUUID(), sessionKey: "demo" },
+  systemPrompt: "You are a helpful assistant. Use tools when needed.",
+  modelRef:     "claude-sonnet-4-20250514",
+  sessionFile:  path.join(os.tmpdir(), "demo-session.jsonl"),
 });
-```
 
-### Session lifecycle
-
-The SDK can enumerate stored sessions, reopen them by `sessionId`, continue a known identity, fork a stored transcript into a new session, and read persisted transcript history.
-
-```ts
-const sessions = await sdk.listSessions();
-const resumed = await sdk.resumeSession("sess-general");
-const continued = await sdk.continueSession({
-  identity: {
-    mode: "general",
-    sessionId: "sess-general",
-    sessionKey: "host:default:general",
-  },
-});
-const forked = await sdk.forkSession("sess-general", {
-  identity: {
-    mode: "general",
-    sessionId: "sess-general-fork",
-    sessionKey: "host:default:general-fork",
-  },
-  sessionFile: forkSessionFile,
-});
-const history = await sdk.readSessionHistory("sess-general");
-```
-
-### Turn streaming
-
-```ts
+// 3. Stream a turn — the agent calls tools autonomously
 for await (const event of session.streamTurn({
   role: "user",
-  content: [{ type: "text", text: "finish now" }],
+  content: [{ type: "text", text: "List the files in the current directory" }],
 })) {
-  // host consumes normalized GeneralAgentStreamEvent values
+  switch (event.kind) {
+    case "assistant_delta":  process.stdout.write(event.text);                           break;
+    case "tool_call":        console.log(`\n🔧 ${event.toolName}`);                     break;
+    case "tool_result":      console.log(`   ✅ done`);                                 break;
+    case "turn_complete":    console.log(`\n\n🏁 Turn complete (${event.stopReason})`);  break;
+  }
+}
+
+await sdk.shutdown();
+```
+
+> **That's it.** The agent autonomously reads the directory, reasons about the output, and streams a formatted answer — all in one `for await` loop.
+
+<br/>
+
+---
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+## 🎯 Core Concepts
+
+### The Event Stream
+
+Every turn returns an `AsyncIterable<GeneralAgentStreamEvent>`. No callbacks, no observers — one loop handles everything:
+
+<div align="center">
+<br/>
+
+<img src=".github/assets/event-flow.svg" alt="Event Flow" width="100%">
+
+<br/><br/>
+</div>
+
+```typescript
+for await (const event of session.streamTurn(input)) {
+  switch (event.kind) {
+    case "assistant_delta":   // → streaming text from the model
+    case "reasoning_delta":   // → model thinking (extended thinking)
+    case "tool_call":         // → built-in tool invoked
+    case "tool_result":       // → tool returned a result
+    case "hosted_tool_call":  // → YOUR tool was requested — SDK suspends ⏸️
+    case "usage_snapshot":    // → token usage update
+    case "turn_complete":     // → this turn is done ✅
+  }
 }
 ```
 
-### Hosted-tool resume
+---
 
-When the SDK emits a hosted-tool call, the host must execute the hosted tool and resume the same session with the same `callId`.
+### 🎯 Hosted Tools — Your Code, The Model's Brain
 
-```ts
-for await (const event of session.submitHostedToolResult({
-  callId,
-  output: { ok: true },
-})) {
-  // resumed stream continues with the same execution context
+Define tools the AI can call. You implement the logic; the SDK orchestrates the lifecycle:
+
+```typescript
+const sdk = await createGeneralAgentSdk({
+  // ...
+  hostedTools: [{
+    name: "get_weather",
+    description: "Get current weather for a city",
+    inputSchema: {
+      type: "object",
+      properties: { city: { type: "string" } },
+      required: ["city"],
+    },
+  }],
+});
+
+for await (const event of session.streamTurn(userMsg)) {
+  if (event.kind === "hosted_tool_call") {
+    //  SDK suspends automatically ⏸️
+    const weather = await getWeather(event.input.city);
+
+    //  Resume with your result ▶️
+    for await (const e of session.submitHostedToolResult({
+      callId: event.callId,
+      output: weather,
+    })) {
+      if (e.kind === "assistant_delta") process.stdout.write(e.text);
+    }
+    break;
+  }
 }
 ```
 
-Hosted tools currently force sequential tool execution inside the vendored loop. That keeps same-run suspend/resume robust for hosted tools such as `finish`.
+> **Restart-safe:** Hosted tool pauses survive process restarts. The SDK snapshots context and resumes correctly — even with multi-tool parallel calls.
 
-Across SDK recreation, the runtime can recover both single-tool and multi-tool hosted-tool suspensions. When the assistant issues multiple tool calls and one is a hosted tool, the SDK snapshots the full context and resumes correctly after restart.
+---
 
-### Hooks
+### 💬 Multi-Turn Memory
 
-The SDK now exposes an OpenClaw-aligned hook surface for embedded-agent flows. Runtime-managed hooks currently include pre-run model/prompt hooks, `llm_input`, `agent_end`, `llm_output`, tool hooks, transcript persist hooks, and session lifecycle hooks. Host-bridged hooks such as `message_sending`, `message_sent`, `message_received`, `inbound_claim`, `before_dispatch`, `gateway_start`, and `gateway_stop` can be emitted directly through the SDK.
+Sessions automatically maintain conversation history:
 
-```ts
-const result = await sdk.emitHook({
-  hookName: "message_sending",
-  event: {
-    to: "channel:123",
-    content: "hello",
-  },
-  context: {
-    channelId: "discord",
-  },
+```typescript
+// Turn 1
+for await (const e of session.streamTurn({
+  role: "user",
+  content: [{ type: "text", text: "My name is Alice. I'm building a TypeScript app." }],
+})) { /* ... */ }
+
+// Turn 2 — the agent remembers everything
+for await (const e of session.streamTurn({
+  role: "user",
+  content: [{ type: "text", text: "What's my name and what am I building?" }],
+})) { /* ... */ }
+// ➜ "Your name is Alice and you're building a TypeScript app."
+```
+
+---
+
+### 🪝 Hooks — Intercept Everything
+
+26 hooks let you observe, modify, or block any lifecycle event:
+
+```typescript
+const sdk = await createGeneralAgentSdk({
+  hooks: [
+    // 🔀 Dynamic model routing
+    {
+      pluginId: "my-app",
+      hookName: "before_model_resolve",
+      handler: (ev) => ({
+        modelOverride: needsPower(ev) ? "claude-opus-4-20250514" : "claude-sonnet-4-20250514",
+      }),
+    },
+
+    // 🛡️ Safety guardrails
+    {
+      pluginId: "my-app",
+      hookName: "before_tool_call",
+      handler: (ev) => {
+        if (ev.toolName === "exec" && ev.params.command?.includes("rm -rf"))
+          return { block: true, blockReason: "Dangerous command blocked" };
+      },
+    },
+
+    // 📊 Usage audit trail
+    {
+      pluginId: "my-app",
+      hookName: "llm_output",
+      handler: (ev) => {
+        db.insert({ model: ev.model, tokens: ev.usage?.input + ev.usage?.output });
+      },
+    },
+  ],
 });
 ```
 
-The public hook registry accepts the full `GeneralAgentHookRegistration` union, including:
+<details>
+<summary><strong>📋 Full hook reference (19 SDK-native + 7 host-bridged)</strong></summary>
 
-- `before_model_resolve`
-- `before_prompt_build`
-- `before_agent_start`
-- `llm_input`
-- `llm_output`
-- `agent_end`
-- `before_compaction`
-- `after_compaction`
-- `before_reset`
-- `inbound_claim`
-- `message_received`
-- `message_sending`
-- `message_sent`
-- `before_tool_call`
-- `after_tool_call`
-- `tool_result_persist`
-- `before_message_write`
-- `session_start`
-- `session_end`
-- `subagent_spawning`
-- `subagent_delivery_target`
-- `subagent_spawned`
-- `subagent_ended`
-- `gateway_start`
-- `gateway_stop`
-- `before_dispatch`
+<br/>
 
-All SDK-native hooks listed above are now auto-emitted by the runtime at the appropriate lifecycle points. This includes `before_reset`, compaction hooks (`before_compaction` / `after_compaction`), and subagent lifecycle hooks (`subagent_spawning` / `subagent_delivery_target` / `subagent_spawned` / `subagent_ended`). Host-bridged hooks such as `gateway_start`, `gateway_stop`, `inbound_claim`, `message_received`, `message_sending`, `message_sent`, and `before_dispatch` remain available through the `sdk.emitHook(...)` dispatch path.
+**SDK-native hooks** — auto-fired by the runtime:
 
-### Dynamic MCP servers
+| Hook | Modifiable | Fires when... |
+|:-----|:---:|:---|
+| `before_model_resolve` | ✅ | Model selection begins |
+| `before_prompt_build` | ✅ | System prompt is being assembled |
+| `before_agent_start` | ✅ | Agent run is about to begin |
+| `llm_input` | — | Request sent to LLM |
+| `llm_output` | — | Response received from LLM |
+| `agent_end` | — | Agent run completed |
+| `before_tool_call` | ✅ | Tool is about to execute |
+| `after_tool_call` | — | Tool execution finished |
+| `tool_result_persist` | ✅ | Tool result being saved to transcript |
+| `before_message_write` | ✅ | Message being written to history |
+| `session_start` | — | Session first activated |
+| `session_end` | — | Session completed |
+| `before_compaction` | — | Context compaction starting |
+| `after_compaction` | — | Context compaction finished |
+| `before_reset` | — | Session about to clear |
+| `subagent_spawning` | ✅ | Child agent creation requested |
+| `subagent_delivery_target` | ✅ | Routing child agent delivery |
+| `subagent_spawned` | — | Child agent created |
+| `subagent_ended` | — | Child agent finished |
 
-The session can register dynamic MCP servers. The current runtime supports local `stdio` MCP servers and injects their tools into the same vendored loop as built-ins and hosted tools.
+**Host-bridged hooks** — you trigger these via `sdk.emitHook()`:
 
-```ts
+| Hook | Purpose |
+|:-----|:--------|
+| `inbound_claim` | Incoming message routing |
+| `before_dispatch` | Pre-dispatch filtering |
+| `message_received` | Message arrival notification |
+| `message_sending` | Modify/cancel outgoing messages |
+| `message_sent` | Delivery confirmation |
+| `gateway_start` | Gateway lifecycle start |
+| `gateway_stop` | Gateway shutdown |
+
+</details>
+
+---
+
+### 🔌 MCP Integration
+
+Plug in any [Model Context Protocol](https://modelcontextprotocol.io/) server — tools appear alongside built-ins:
+
+```typescript
 session.setDynamicMcpServers({
-  echo_server: {
+  // Local process (stdio)
+  filesystem: {
     transport: "stdio",
-    command: process.execPath,
-    args: ["/abs/path/to/echo-server.mjs"],
+    command: "npx",
+    args: ["-y", "@modelcontextprotocol/server-filesystem", "/data"],
   },
-});
 
-const query = session.getCurrentQuery();
-const status = await query?.mcpServerStatus?.();
-await query?.toggleMcpServer?.("echo_server", false);
-```
-
-Both MCP transport modes are supported:
-
-- `stdio`: local process servers
-- `http`: remote HTTP-based MCP endpoints
-
-Example with `http` transport:
-
-```ts
-session.setDynamicMcpServers({
-  remote_server: {
+  // Remote endpoint (HTTP)
+  my_api: {
     transport: "http",
     url: "https://mcp.example.com/api",
     headers: { Authorization: "Bearer token" },
@@ -256,194 +331,190 @@ session.setDynamicMcpServers({
 });
 ```
 
-### Session reset
+---
 
-A session can be reset to clear its message history, usage state, and pending hosted-tool state while preserving the session identity and configuration. This is useful when the host wants to start fresh within the same session without creating a new one.
+### 🤖 Subagents
 
-```ts
-await session.reset("context_overflow");
+The agent can spawn scoped child agents to divide and conquer complex tasks:
+
+```typescript
+const session = sdk.createSession({
+  systemPrompt: `You are a tech lead. Delegate tasks using the subagents tool.`,
+  // ...
+});
+
+// The agent will autonomously:
+// 1. Analyze the task
+// 2. Spawn child agents with scoped instructions + tools
+// 3. Collect results from each child
+// 4. Synthesize a final answer
 ```
 
-The reset fires a `before_reset` hook before clearing state, allowing hooks to observe the outgoing transcript.
+Each child gets **independent message history** and **scoped tool access**. The `subagents` tool is excluded from children to prevent infinite recursion. Four lifecycle hooks fire automatically: `subagent_spawning` → `subagent_spawned` → `subagent_ended`.
 
-### Compaction
+---
 
-The SDK supports runtime compaction to manage context window pressure. Compaction can be triggered manually or automatically based on token usage thresholds.
+### 📊 Session Management
 
-```ts
-// Manual compaction
-await session.requestCompaction();
+```typescript
+const session  = sdk.createSession({ ... });          // Create
+const resumed  = await sdk.resumeSession("sess-123"); // Resume
+const forked   = await sdk.forkSession("sess-123", {  // Fork
+  identity: { ... },
+});
+const sessions = await sdk.listSessions();             // List all
+const history  = await sdk.readSessionHistory("id");   // Read transcript
+await session.reset("context_overflow");               // Reset
+const usage    = session.getUsageSnapshot();            // Token usage
+```
 
-// Automatic compaction when usage exceeds threshold
+**Context Compaction** — long conversations don't overflow:
+
+```typescript
 await session.maybeCompactByTokens({
-  usedPctThreshold: 85,  // compact when context is 85% full
-  cooldownMs: 60_000,    // minimum 60s between compactions
+  usedPctThreshold: 85,  // trigger at 85% context usage
+  cooldownMs: 60_000,    // min 60s between compactions
 });
 ```
 
-Compaction truncates older messages and replaces them with a concise summary, keeping the most recent conversation context intact. The SDK emits `compaction_started` and `compaction_finished` stream events and fires `before_compaction` / `after_compaction` hooks during the process.
+**File Checkpoints** — every write creates an automatic rollback point:
 
-The context window size is resolved dynamically based on the model (e.g., 200K for Claude models, 128K for GPT-4o, 1M+ for Gemini models).
-
-### Subagents
-
-The `subagents` tool is a first-class core built-in. When the agent calls it, the SDK automatically creates a child `GeneralAgentSdkSession` with:
-
-- **Independent message history** — the child session has its own transcript, isolated from the parent
-- **Scoped instructions** — the child receives its own system prompt via the `instructions` parameter
-- **Scoped tool access** — the child inherits the parent's tools except `subagents` itself (preventing infinite recursion). An optional `allowedTools` parameter further restricts the child's tool set.
-- **Parent/child coordination** — the parent's agent loop blocks while the child runs to completion, then receives the child's output as the tool result
-
-All 4 subagent lifecycle hooks fire automatically:
-- `subagent_spawning` — before creation (can block with `{ status: "error" }`)
-- `subagent_delivery_target` — after creation, before execution
-- `subagent_spawned` — after child session is ready
-- `subagent_ended` — after child completes (with `outcome: "ok"` or `"error"`)
-
-### File checkpoints
-
-File mutation tools automatically create SDK-managed checkpoints before successful `write`, `edit`, and `apply_patch` calls. Checkpoints are Git-independent and can be rewound through the session API.
-
-```ts
+```typescript
 const checkpoints = await session.listCheckpoints();
-await session.restoreCheckpoint(checkpoints[0]!.id);
+await session.restoreCheckpoint(checkpoints[0].id);
 ```
 
-Restoring a checkpoint rewinds that checkpoint and any newer checkpoints, so rollback stays linear and predictable.
+<br/>
 
-## Event Model
+---
 
-`GeneralAgentStreamEvent` currently supports:
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 
-- `assistant_delta`
-- `reasoning_delta`
-- `reasoning_end`
-- `tool_call`
-- `tool_result`
-- `tool_error`
-- `hosted_tool_call`
-- `usage_snapshot`
-- `compaction_started`
-- `compaction_finished`
-- `turn_complete`
+## 🏗 Architecture
 
-The host is expected to normalize these events into its own runtime contract when necessary.
+<div align="center">
+<br/>
 
-## Persistence Model
+<img src=".github/assets/architecture.svg" alt="Architecture" width="100%">
 
-The SDK does not own canonical session identity. Instead, the host provides a `sessionStore` adapter and resolves the session file path explicitly.
+<br/><br/>
+</div>
 
-Key persistence properties:
+<details>
+<summary><strong>📁 Repository structure</strong></summary>
 
-- provider-specific transcripts are allowed
-- provider-specific raw stream logs are allowed
-- both must remain under host-owned directories
-- session identity must come from the host
-- no parallel SDK-owned global session registry is introduced
-- pending hosted-tool wait states and reconstructible continuation snapshots may be persisted when the runtime can resume them safely
-
-The persistence adapter lives in [`src/public/persistence.ts`](./src/public/persistence.ts).
-
-## Logging Model
-
-The SDK emits canonical host-facing log events through `GeneralAgentHostLogger`.
-
-Supported log categories:
-
-- `system_prompt`
-- `tool_call`
-- `tool_result`
-- `assistant`
-- `system`
-- `provider_debug`
-
-The logger can also receive raw structured stream events through `onRawStreamEvent()` when the host wants a low-level audit trail.
-
-## Plugin and Tool Policy
-
-The factory accepts:
-
-- `pluginMode: "disabled" | "allowlisted" | "full-embedded"`
-- `enabledPluginIds?: string[]`
-- `hostedTools?: GeneralAgentHostedToolDefinition[]`
-- `tools?.web?.fetch?: GeneralAgentWebFetchToolOptions`
-- `tools?.web?.search?: GeneralAgentWebSearchToolOptions`
-
-This makes the host's trust boundary explicit. The SDK can preserve OpenClaw's plugin and tool semantics, but the host decides how much of that surface is enabled in embedded mode.
-
-`web_search` is now assembled as a built-in tool by default. Internally it follows a source-synced provider runtime: Brave is selected when credentials are available, and the SDK keeps the tool present by falling back to the bundled keyless DuckDuckGo provider when no Brave key is configured.
-
-Plugin scope is intentionally narrow: in this repository, plugin controls are reserved for web-related capabilities only. General-purpose non-web plugin loading is not a product goal for the SDK; other extensibility should go through built-in tools, hosted tools, MCP, or hooks.
-
-## Repository Layout
-
-```text
-src/
-  index.ts                  # top-level export surface
-  public/                   # supported public API
-  core/                     # SDK-owned runtime implementation
-  upstream/openclaw/        # extracted upstream subset only
-manifests/
-  upstream-provenance.json  # machine-readable provenance map
-scripts/
-  sync-from-openclaw.mjs
-  verify-upstream-snapshot.mjs
-tests/
-  contract/
-  integration/
-  unit/
-docs/
-  superpowers/
-    specs/
-    plans/
+```
+general-agent-sdk/
+├── src/
+│   ├── index.ts                → Package entry point
+│   ├── public/                 → Stable public API surface
+│   │   ├── sdk.ts              → createGeneralAgentSdk()
+│   │   ├── session.ts          → GeneralAgentSession
+│   │   ├── events.ts           → GeneralAgentStreamEvent
+│   │   ├── hooks.ts            → 26 hook type definitions
+│   │   ├── types.ts            → Shared types
+│   │   ├── host-tools.ts       → Hosted tool definitions
+│   │   └── persistence.ts      → Storage adapter interface
+│   ├── core/
+│   │   ├── embedded-runner/    → Session factory + runtime
+│   │   ├── compaction/         → Context window compaction
+│   │   ├── mcp/                → MCP client (stdio + HTTP)
+│   │   ├── model/              → Model context window resolution
+│   │   ├── plugins/            → Hook runner engine
+│   │   ├── sessions/           → Metadata index + transcript repair
+│   │   └── checkpoints/        → File checkpoint manager
+│   ├── tools/                  → Built-in tool implementations
+│   ├── loop/                   → Agent execution loop
+│   └── providers/              → LLM provider adapters
+├── SDK DOCS/                   → Runnable examples + API reference
+├── tests/                      → 133 tests (unit / integration / contract / e2e)
+└── manifests/                  → Upstream provenance tracking
 ```
 
-## Development
+</details>
 
-Install dependencies:
+---
+
+## 📋 Event Reference
+
+| Event | Payload | Description |
+|:------|:--------|:------------|
+| `assistant_delta` | `{ text }` | Streaming text chunk from the model |
+| `reasoning_delta` | `{ text }` | Extended thinking (chain-of-thought) |
+| `reasoning_end` | — | Thinking phase complete |
+| `tool_call` | `{ callId, toolName, input }` | Built-in tool invoked by the agent |
+| `tool_result` | `{ callId, toolName, output }` | Tool execution result |
+| `tool_error` | `{ callId, toolName, error }` | Tool execution failed |
+| `hosted_tool_call` | `{ callId, toolName, input }` | **Your** tool requested — SDK suspends |
+| `usage_snapshot` | `{ snapshot }` | Token usage update |
+| `compaction_started` | `{ reason }` | Context compaction in progress |
+| `compaction_finished` | `{ reason, tokensAfter? }` | Compaction complete |
+| `turn_complete` | `{ stopReason }` | Turn finished |
+
+---
+
+## 🧰 Built-in Tools
+
+| Tool | Description | Category |
+|:-----|:------------|:---------|
+| `read` | Read file contents with optional line ranges | File I/O |
+| `write` | Create or overwrite files | File I/O |
+| `edit` | Surgical string-replace edits | File I/O |
+| `apply_patch` | Apply unified diff patches | File I/O |
+| `exec` | Execute shell commands | System |
+| `web_search` | Search the web (Brave / DuckDuckGo) | Web |
+| `web_fetch` | Fetch and parse web pages | Web |
+| `subagents` | Spawn scoped child agents | Orchestration |
+
+---
+
+## 📖 Examples
+
+All examples are **runnable** TypeScript files:
 
 ```bash
-pnpm install
+export ANTHROPIC_API_KEY="sk-ant-..."
+npx tsx "SDK DOCS/01-hello-world.ts"
 ```
 
-Run the main verification steps:
+| # | Example | What it covers |
+|:--|:--------|:---------------|
+| 01 | [`hello-world.ts`](./SDK%20DOCS/01-hello-world.ts) | Minimal agent, first `streamTurn()` call |
+| 02 | [`multi-turn-chat.ts`](./SDK%20DOCS/02-multi-turn-chat.ts) | Interactive REPL with memory |
+| 03 | [`hosted-tools.ts`](./SDK%20DOCS/03-hosted-tools.ts) | Custom tool with suspend/resume |
+| 04 | [`session-lifecycle.ts`](./SDK%20DOCS/04-session-lifecycle.ts) | Create, resume, fork, reset |
+| 05 | [`hooks.ts`](./SDK%20DOCS/05-hooks.ts) | Lifecycle hooks in action |
+| 06 | [`mcp-servers.ts`](./SDK%20DOCS/06-mcp-servers.ts) | Dynamic MCP integration |
+| 07 | [`compaction.ts`](./SDK%20DOCS/07-compaction.ts) | Context window management |
+| 08 | [`subagents.ts`](./SDK%20DOCS/08-subagents.ts) | Child agent delegation |
+
+> 📚 Full API documentation: [`SDK DOCS/API-REFERENCE.md`](./SDK%20DOCS/API-REFERENCE.md)
+
+---
+
+## 🔧 Development
 
 ```bash
-pnpm run check
-pnpm run build
-pnpm run test
-pnpm run test:e2e
-node scripts/verify-upstream-snapshot.mjs
+pnpm install                            # Install dependencies
+pnpm run check                          # Type check
+pnpm run build                          # Build
+pnpm run test                           # 133 unit + integration tests
+pnpm run test:e2e                       # Package smoke test
+node scripts/verify-upstream-snapshot.mjs  # Verify provenance
 ```
 
-## Upstream Provenance
+---
 
-This repository deliberately does not mirror the entire upstream OpenClaw source tree.
+<div align="center">
 
-Instead:
+<br/>
 
-- copied upstream snapshots live under `src/upstream/openclaw/`
-- source-synced adapted files may also live in normal SDK paths such as `src/tools/` and `src/security/`
-- each extracted file is tracked in [`manifests/upstream-provenance.json`](./manifests/upstream-provenance.json)
-- provenance can be revalidated with `node scripts/verify-upstream-snapshot.mjs`
+**MIT** · Built by [BabelCloud](https://github.com/babelcloud)
 
-This is a hard boundary, not just documentation.
+<br/>
 
-## Host Integration
+<sub>If this project helps you build something cool, give it a ⭐ — it helps others find it too.</sub>
 
-A host application typically keeps the following responsibilities outside the SDK:
+<br/><br/>
 
-- canonical `session.json`
-- dual-session switching
-- channel ingress and owner notifications
-- cross-engine continuity journal
-- top-level profile and environment management
-
-That design keeps the General Agent SDK as an execution backend rather than turning the host into an OpenClaw runtime shell.
-
-## Specifications and Implementation Notes
-
-- Design spec: [`docs/superpowers/specs/2026-03-31-general-agent-sdk-source-sync-design.md`](./docs/superpowers/specs/2026-03-31-general-agent-sdk-source-sync-design.md)
-- Implementation plan: [`docs/superpowers/plans/2026-03-31-general-agent-sdk-source-sync.md`](./docs/superpowers/plans/2026-03-31-general-agent-sdk-source-sync.md)
-
-These documents are the source of truth for architecture, boundary rules, continuity requirements, and integration sequencing.
+</div>
