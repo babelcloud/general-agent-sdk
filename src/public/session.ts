@@ -6,11 +6,13 @@ import type { GeneralAgentStreamEvent } from "./events.js";
 import type {
   GeneralAgentCompactionOptions,
   GeneralAgentCurrentQueryLike,
+  GeneralAgentFileCheckpoint,
+  GeneralAgentMcpServerConfig,
   GeneralAgentTurnInput,
   GeneralAgentUsageSnapshot,
 } from "./types.js";
 
-export interface GeneralAgentAgentSession {
+export interface GeneralAgentSession {
   streamTurn(input: GeneralAgentTurnInput): AsyncIterable<GeneralAgentStreamEvent>;
   injectMessage(input: GeneralAgentTurnInput): boolean;
   submitHostedToolResult(
@@ -22,13 +24,16 @@ export interface GeneralAgentAgentSession {
   requestStop(): void;
   clearStop(): void;
   isStopRequested(): boolean;
+  reset(reason?: string): Promise<void>;
   requestCompaction(): Promise<void>;
   maybeCompactByTokens(options?: GeneralAgentCompactionOptions): Promise<void>;
   getSessionId(): string;
   getTranscriptPath(): string | null;
   getUsageSnapshot(): GeneralAgentUsageSnapshot | null;
   getCurrentQuery(): GeneralAgentCurrentQueryLike | null;
-  setDynamicMcpServers(servers: Record<string, Record<string, unknown>>): void;
-  getDynamicMcpServers(): Record<string, Record<string, unknown>>;
+  listCheckpoints(): Promise<GeneralAgentFileCheckpoint[]>;
+  restoreCheckpoint(id: string): Promise<void>;
+  setDynamicMcpServers(servers: Record<string, GeneralAgentMcpServerConfig>): void;
+  getDynamicMcpServers(): Record<string, GeneralAgentMcpServerConfig>;
   closeInput(): void;
 }

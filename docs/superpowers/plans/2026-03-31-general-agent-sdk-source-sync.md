@@ -2,9 +2,93 @@
 
 Date: 2026-03-31
 Location: `/Users/apple/programme/funny_projects/openclaw_agent_sdk`
-Status: Draft
+Status: ✅ Complete (all gates passed)
 Related spec: `docs/superpowers/specs/2026-03-31-general-agent-sdk-source-sync-design.md`
 Recommended execution mode: Subagent-Driven (Agent Teams)
+
+## 0. Current Task List
+
+Last updated: 2026-03-31 (final — all workstreams complete, all review gates passed, all 15 acceptance criteria satisfied)
+
+This section is the maintained execution list. It is intentionally shorter and stricter than the full plan below.
+
+### Completed
+
+- [x] Remove shipped VisionClaw compatibility exports and distribution expectations.
+- [x] Rename the public surface to `General Agent SDK` / `GeneralAgent*`.
+- [x] Remove the published `./plugin-sdk` export.
+- [x] Add `continueSession`, `resumeSession`, `forkSession`, `listSessions`, and `readSessionHistory`.
+- [x] Preserve structured tool-result `details` through runtime adaptation.
+- [x] Add file checkpoints for `write`, `edit`, and `apply_patch`.
+- [x] Add core built-ins `apply_patch`, `web_search`, and `web_fetch`.
+- [x] Add an explicit tool catalog and runtime classification table.
+- [x] Add MCP `stdio` runtime and persisted MCP server enablement state.
+- [x] Add MCP `http` transport to the dynamic MCP runtime.
+- [x] Add OpenClaw-style public hook types plus host-emitted `sdk.emitHook(...)`.
+- [x] Make same-process hosted-tool continuation resume the same run across multiple tool calls.
+- [x] Auto-fire runtime `llm_input`, `agent_end`, and `llm_output` hook events.
+- [x] Add public `session.reset(reason?)` with a live reset seam.
+- [x] Auto-fire runtime `before_reset` hook events.
+- [x] Add restart-safe hosted-tool continuation for safely reconstructible single-tool suspensions.
+- [x] Auto-fire `before_model_resolve`, `before_prompt_build`, `before_agent_start` hook events.
+- [x] Auto-fire `before_tool_call`, `after_tool_call`, `tool_result_persist`, `before_message_write` hook events.
+- [x] Auto-fire `session_start` and `session_end` hook events.
+- [x] Implement working compaction runtime with truncation-based summarization, `before_compaction`/`after_compaction` hook auto-emission, and `compaction_started`/`compaction_finished` stream events.
+- [x] Replace hardcoded 200K context window with model-aware dynamic resolution via `resolveContextWindow()`.
+- [x] Broaden restart-safe hosted-tool continuation to support multi-tool scenarios via `agent_loop_continue_multi_tool` strategy.
+- [x] Wire subagent lifecycle hook auto-emission (`subagent_spawning`, `subagent_spawned`, `subagent_ended`) into the hosted-tool-bridge execution path for the `subagents` tool.
+- [x] Sync README/examples/package docs: fix stale MCP `http` claim, add `session.reset()` documentation, add compaction documentation, update hosted-tool continuation description, update subagent hook status.
+- [x] Wire `getSteeringMessages` and `getFollowUpMessages` callbacks into `agentLoop()` and `agentLoopContinue()` calls.
+- [x] Add transcript repair/validation via `sanitizeMessages()` before compaction and at the start of each vendored loop run.
+- [x] Replace hardcoded `"openai/gpt-5.4"` fallback with `DEFAULT_MODEL_REF` constant in `sdk-factory.ts`.
+- [x] Add acceptance tests: context window resolution (7 tests), compaction integration (3 tests), session reset (3 tests).
+- [x] Add missing-credentials acceptance test and fix §16 compliance: removed silent "Acknowledged:" stub fallback; `streamTurn()` now throws hard error when no API key and no hosted-tool match (2 tests).
+- [x] Harden `session-metadata-index.ts` JSON parsing: `readIndex()` and `readTranscriptHistory()` now gracefully handle empty/corrupted files instead of crashing.
+- [x] Workstream 7.3 full repository verification: `check` ✅, `build` ✅, `test` (130 tests / 35 files) ✅, `test:e2e` (package smoke) ✅, `verify-upstream-snapshot` (29 provenance entries) ✅.
+- [x] Implement first-class subagent runtime: `subagents` upgraded from host-bridged to core built-in with internal child session creation, independent message history, scoped tools (excluding `subagents` to prevent recursion), parent/child coordination, and all 4 lifecycle hooks connected (`subagent_spawning`, `subagent_delivery_target`, `subagent_spawned`, `subagent_ended`). Test coverage: 3 integration tests.
+- [x] Final verification: `check` ✅, `build` ✅, `test` (133 tests / 36 files) ✅, `test:e2e` ✅, `verify-upstream-snapshot` ✅.
+
+### Remaining Local Behavioral Seams (Low Priority)
+
+Only one low-severity seam remains:
+
+| Seam | Location | Severity | Notes |
+|---|---|---|---|
+| Simplified toolExecution strategy | `sdk-session.ts` — `sequential` if hostedTools exist, else `undefined` | Low | Functional but not upstream-aligned; upstream uses model compatibility and sandbox context to decide |
+
+All previously tracked medium-severity seams (steering messages, transcript repair, hardcoded model, hardcoded context window) have been resolved.
+
+### Next Priority Queue
+
+1. ~~**First-class subagent runtime**~~ → ✅ DONE. `subagents` is now a core built-in with first-class child-session runtime.
+2. **Upgrade compaction to LLM-based summarization** when the truncation approach proves insufficient for deep conversations.
+3. **Upstream-aligned toolExecution strategy** — resolve tool execution mode from model compatibility instead of hosted-tool presence heuristic.
+
+### Known Gaps Against The Acceptance Bar
+
+Mapped to design spec §17 acceptance criteria:
+
+| § | Criterion | Status | Gap |
+|---|---|---|---|
+| 1 | Autonomous multi-step tool/model execution | ✅ Satisfied | — |
+| 2 | `web_search` and `web_fetch` source-synced built-ins | ✅ Satisfied | — |
+| 3 | Every tool explicitly classified | ✅ Satisfied | Tool catalog with `core`/`optional`/`host-bridged`/`out-of-scope` classification exists |
+| 4 | Hosted tools/approvals suspend and resume same run | ✅ Satisfied | Same-process and restart-safe continuation works for both single-tool and multi-tool scenarios |
+| 5 | Tool results preserve structured `details` | ✅ Satisfied | — |
+| 6 | Sessions: create/continue/resume/fork/enumerate/history | ✅ Satisfied | — |
+| 7 | Hook system covering SDK-native hook families | ✅ Satisfied | All 19 SDK-native hooks auto-fire: model/prompt hooks, llm_input/output, agent_end, tool hooks, persist hooks, session lifecycle, compaction hooks, reset hooks, and subagent lifecycle hooks |
+| 8 | Host-bridged hook emission without channel/gateway | ✅ Satisfied | `sdk.emitHook(...)` works for all host-bridged families |
+| 9 | MCP for local-process and HTTP transports | ✅ Satisfied | — |
+| 10 | Subagents with lifecycle support | ✅ Satisfied | `subagents` is a core built-in with first-class child-session runtime, independent message history, scoped tools, parent/child coordination, and all 4 lifecycle hooks. |
+| 11 | Streaming with incremental and terminal events | ✅ Satisfied | — |
+| 12 | File checkpointing and rewind | ✅ Satisfied | — |
+| 13 | Missing credentials fail loudly | ✅ Satisfied | Without API key + no hosted-tool match: `streamTurn()` throws hard error. Old "Acknowledged:" stub removed. Test coverage in `missing-credentials.test.ts`. |
+| 14 | VisionClaw removed | ✅ Satisfied | — |
+| 15 | Public naming on `GeneralAgent*` | ✅ Satisfied | — |
+
+**Summary: 15 of 15 acceptance criteria fully satisfied. 0 partially satisfied.**
+
+**All 7 review gates passed. 133 tests, package smoke, and upstream provenance check all green. Plan status: COMPLETE.**
 
 ## 1. Objective
 
@@ -17,6 +101,8 @@ Execute the source-sync design spec by converting the current repository from a 
 - migrates OpenClaw's hook runtime into the SDK
 - makes hosted-tool and approval pauses resume the same run
 - adds durable sessions, subagents, MCP, and checkpointing to the public SDK surface
+
+Plugin scope is intentionally constrained: only web-related capabilities should continue to use a plugin seam. Non-web SDK work should not expand the plugin surface further.
 
 ## 2. Scope Split
 
@@ -455,6 +541,7 @@ Changes:
   - `host-bridged`
   - `out-of-scope`
 - Make the assembly layer consume this classification instead of scattered ad hoc decisions.
+- Keep plugin-oriented classification narrow: only web capabilities should retain plugin-facing extension seams.
 
 Verification:
 
@@ -788,13 +875,13 @@ Workers must not revert each other's edits and should re-read touched files befo
 
 Do not move past each gate until its verification is green:
 
-1. Gate A: public rename + package export cleanup
-2. Gate B: runtime seam compiles and standalone session still runs
-3. Gate C: hosted-tool same-run continuation + durable session state
-4. Gate D: source-synced core tools + structured tool results
-5. Gate E: hook runner migration
-6. Gate F: MCP + subagents + checkpoints
-7. Gate G: full repo verification
+1. Gate A: public rename + package export cleanup — ✅ Passed
+2. Gate B: runtime seam compiles and standalone session still runs — ✅ Passed
+3. Gate C: hosted-tool same-run continuation + durable session state — ✅ Passed
+4. Gate D: source-synced core tools + structured tool results — ✅ Passed
+5. Gate E: hook runner migration — ✅ Passed
+6. Gate F: MCP + subagents + checkpoints — ✅ Passed (subagents host-bridged with lifecycle hooks; first-class runtime deferred to v2)
+7. Gate G: full repo verification — ✅ Passed (130 tests, package smoke, provenance check all green)
 
 ## 13. Recommended First Execution Batch
 

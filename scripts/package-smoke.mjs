@@ -66,9 +66,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
-  createGeneralAgentAgentSdk,
+  createGeneralAgentSdk,
 } from "general-agent-sdk";
-import * as pluginSdk from "general-agent-sdk/plugin-sdk";
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "general-agent-sdk-installed-"));
 const sessionFile = path.join(root, "profile", "providers", "general-agent", "transcripts", "general.jsonl");
@@ -76,7 +75,7 @@ const rawEventLogPath = path.join(root, "profile", "providers", "general-agent",
 const logEvents = [];
 const rawEvents = [];
 
-const sdk = await createGeneralAgentAgentSdk({
+const sdk = await createGeneralAgentSdk({
   workspaceDir: path.join(root, "workspace"),
   stateDir: path.join(root, "profile"),
   agentDir: path.join(root, "profile", "providers", "general-agent", "embedded"),
@@ -109,15 +108,11 @@ const sdk = await createGeneralAgentAgentSdk({
   ],
 });
 
-if (typeof pluginSdk.createGeneralAgentAgentSdk !== "function") {
-  throw new Error("plugin-sdk export surface is not wired to dist");
-}
-
 const session = sdk.createSession({
   identity: {
     mode: "general",
     sessionId: "sess-general",
-    sessionKey: "visionclaw:default:general",
+    sessionKey: "host:default:general",
   },
   systemPrompt: "Use the finish tool immediately.",
   modelRef: "openai/gpt-5.4",
@@ -125,16 +120,26 @@ const session = sdk.createSession({
   rawEventLogPath,
 });
 
-const deniedTurn = [];
-for await (const event of session.streamTurn({
-  role: "user",
-  content: [{ type: "text", text: "gateway now" }],
-})) {
-  deniedTurn.push(event);
+// Verify that a denied tool (gateway) is NOT exposed: without a valid API key
+// and without a matching allowed hosted tool, the SDK throws a hard error per §16.
+let deniedTurnError = null;
+try {
+  const deniedTurn = [];
+  for await (const event of session.streamTurn({
+    role: "user",
+    content: [{ type: "text", text: "gateway now" }],
+  })) {
+    deniedTurn.push(event);
+    if (event.kind === "hosted_tool_call") {
+      throw new Error("denied tool was exposed from packaged sdk");
+    }
+  }
+} catch (err) {
+  deniedTurnError = err;
 }
 
-if (deniedTurn.some((event) => event.kind === "hosted_tool_call")) {
-  throw new Error("denied tool was exposed from packaged sdk");
+if (!deniedTurnError || !deniedTurnError.message.includes("No API key provided")) {
+  throw new Error("expected hard error for denied tool turn without API key, got: " + String(deniedTurnError?.message ?? "no error"));
 }
 
 const firstTurn = [];

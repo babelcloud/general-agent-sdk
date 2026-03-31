@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { createGeneralAgentAgentSdk, type GeneralAgentStreamEvent } from "../../src/index.js";
+import { createGeneralAgentSdk, type GeneralAgentStreamEvent } from "../../src/index.js";
 
 async function collect(stream: AsyncIterable<GeneralAgentStreamEvent>): Promise<GeneralAgentStreamEvent[]> {
   const events: GeneralAgentStreamEvent[] = [];
@@ -25,7 +25,7 @@ describe("plugins and tool policy", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "general-agent-sdk-tools-"));
     tempDirs.push(root);
 
-    const sdk = await createGeneralAgentAgentSdk({
+    const sdk = await createGeneralAgentSdk({
       workspaceDir: path.join(root, "workspace"),
       stateDir: path.join(root, "state"),
       agentDir: path.join(root, "agent"),
@@ -65,20 +65,23 @@ describe("plugins and tool policy", () => {
       identity: {
         mode: "general",
         sessionId: "sess-general",
-        sessionKey: "visionclaw:default:general",
+        sessionKey: "host:default:general",
       },
       systemPrompt: "Use the finish tool immediately.",
       modelRef: "openai/gpt-5.4",
       sessionFile: path.join(root, "state", "session.jsonl"),
     });
 
-    const deniedTurn = await collect(
-      session.streamTurn({
-        role: "user",
-        content: [{ type: "text", text: "gateway now" }],
-      }),
-    );
-    expect(deniedTurn.some((event) => event.kind === "hosted_tool_call")).toBe(false);
+    // "gateway" is blocked in embedded mode, so the message doesn't match any
+    // allowed hosted tool and the SDK throws because no API key is configured.
+    await expect(
+      collect(
+        session.streamTurn({
+          role: "user",
+          content: [{ type: "text", text: "gateway now" }],
+        }),
+      ),
+    ).rejects.toThrow("No API key provided");
 
     const allowedTurn = await collect(
       session.streamTurn({
@@ -97,7 +100,7 @@ describe("plugins and tool policy", () => {
     ) as {
       exports?: Record<string, unknown>;
     };
-    expect(packageJson.exports?.["./plugin-sdk"]).toBeDefined();
+    expect(packageJson.exports?.["./plugin-sdk"]).toBeUndefined();
 
     await sdk.shutdown();
   });

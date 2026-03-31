@@ -33,10 +33,16 @@ describe("tool result helpers", () => {
     expect(result.content[0]).toEqual({ type: "text", text: "hello" });
   });
 
+  it("textResult preserves explicit structured details", () => {
+    const result = textResult("hello", { status: "ok", lineCount: 1 });
+    expect(result.details).toEqual({ status: "ok", lineCount: 1 });
+  });
+
   it("jsonResult stringifies object", () => {
     const result = jsonResult({ status: "ok", count: 3 });
     expect(result.content).toHaveLength(1);
     const text = (result.content[0] as { type: "text"; text: string }).text;
     expect(JSON.parse(text)).toEqual({ status: "ok", count: 3 });
+    expect(result.details).toEqual({ status: "ok", count: 3 });
   });
 });

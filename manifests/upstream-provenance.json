@@ -93,6 +93,84 @@
       "mode": "copied"
     },
     {
+      "dest": "src/tools/file/apply-patch.ts",
+      "upstream": "src/agents/apply-patch.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "adapted"
+    },
+    {
+      "dest": "src/tools/file/apply-patch-update.ts",
+      "upstream": "src/agents/apply-patch-update.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "adapted"
+    },
+    {
+      "dest": "src/security/external-content.ts",
+      "upstream": "src/security/external-content.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "adapted"
+    },
+    {
+      "dest": "src/tools/web/web-fetch.ts",
+      "upstream": "src/agents/tools/web-fetch.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "adapted"
+    },
+    {
+      "dest": "src/tools/web/web-fetch-utils.ts",
+      "upstream": "src/agents/tools/web-fetch-utils.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "adapted"
+    },
+    {
+      "dest": "src/tools/web/web-fetch-visibility.ts",
+      "upstream": "src/agents/tools/web-fetch-visibility.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "adapted"
+    },
+    {
+      "dest": "src/tools/web/web-shared.ts",
+      "upstream": "src/agents/tools/web-shared.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "adapted"
+    },
+    {
+      "dest": "src/tools/web/web-search.ts",
+      "upstream": "src/agents/tools/web-search.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "adapted"
+    },
+    {
+      "dest": "src/tools/web/web-search-runtime.ts",
+      "upstream": "src/web-search/runtime.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "adapted"
+    },
+    {
+      "dest": "src/tools/web/web-search-provider-common.ts",
+      "upstream": "src/agents/tools/web-search-provider-common.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "adapted"
+    },
+    {
+      "dest": "src/tools/web/brave-web-search-provider.ts",
+      "upstream": "extensions/brave/src/brave-web-search-provider.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "adapted"
+    },
+    {
+      "dest": "src/tools/web/duckduckgo-web-search-provider.ts",
+      "upstream": "extensions/duckduckgo/src/ddg-search-provider.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "adapted"
+    },
+    {
+      "dest": "src/tools/web/duckduckgo-web-search-client.ts",
+      "upstream": "extensions/duckduckgo/src/ddg-client.ts",
+      "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",
+      "mode": "adapted"
+    },
+    {
       "dest": "src/upstream/openclaw/config/paths.ts",
       "upstream": "src/config/paths.ts",
       "upstreamSha": "edb5123f26e9b410cf299456505181588beba3cc",

@@ -10,6 +10,7 @@ export interface GeneralAgentToolResult {
     | { type: "text"; text: string }
     | { type: "image"; source: { type: "base64"; media_type: string; data: string } }
   >;
+  details?: unknown;
 }
 
 /**

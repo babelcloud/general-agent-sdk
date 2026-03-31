@@ -1,4 +1,5 @@
-import { resolve as dnsResolve } from "node:dns/promises";
+import * as dns from "node:dns/promises";
+import { isIP } from "node:net";
 import { URL } from "node:url";
 
 /**
@@ -21,6 +22,8 @@ const BLOCKED_HOSTNAMES = new Set([
 	"169.254.169.254", // AWS/GCP metadata
 	"[::1]",
 ]);
+
+let resolveDnsImpl = (hostname: string) => dns.resolve(hostname);
 
 export function isBlockedHostname(hostname: string): boolean {
 	const lower = hostname.toLowerCase();
@@ -117,24 +120,37 @@ export async function validateUrlForFetch(urlString: string): Promise<{ safe: bo
 	}
 
 	// Check if hostname is already an IP
-	if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname) || hostname.startsWith("[")) {
-		const ip = hostname.replace(/^\[|\]$/g, "");
+	const ip = hostname.replace(/^\[|\]$/g, "");
+	if (isIP(ip) > 0) {
 		if (isPrivateIpAddress(ip)) {
 			return { safe: false, reason: `Blocked private IP: ${ip}` };
 		}
+		return { safe: true };
 	}
 
 	// Resolve DNS and check resolved IP
 	try {
-		const addresses = await dnsResolve(hostname);
+		const addresses = await resolveDnsImpl(hostname);
+		if (!addresses.length) {
+			return { safe: false, reason: `DNS resolution failed: ${hostname}` };
+		}
 		for (const addr of addresses) {
 			if (isPrivateIpAddress(addr)) {
 				return { safe: false, reason: `DNS resolved to private IP: ${addr}` };
 			}
 		}
 	} catch {
-		// DNS resolution failed — allow the request (the fetch itself will fail)
+		return { safe: false, reason: `DNS resolution failed: ${hostname}` };
 	}
 
 	return { safe: true };
 }
+
+export const __testing = {
+	setDnsResolverForTests(resolver: typeof resolveDnsImpl) {
+		resolveDnsImpl = resolver;
+	},
+	resetDnsResolverForTests() {
+		resolveDnsImpl = (hostname: string) => dns.resolve(hostname);
+	},
+};

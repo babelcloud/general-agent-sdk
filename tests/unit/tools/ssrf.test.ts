@@ -1,7 +1,17 @@
-import { describe, it, expect } from "vitest";
-import { isPrivateIpAddress, isBlockedHostname } from "../../../src/tools/web/ssrf.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+	__testing as ssrfTesting,
+	isPrivateIpAddress,
+	isBlockedHostname,
+	validateUrlForFetch,
+} from "../../../src/tools/web/ssrf.js";
 
 describe("SSRF protection", () => {
+	afterEach(() => {
+		ssrfTesting.resetDnsResolverForTests();
+		vi.restoreAllMocks();
+	});
+
 	describe("isBlockedHostname", () => {
 		it("blocks localhost", () => {
 			expect(isBlockedHostname("localhost")).toBe(true);
@@ -58,6 +68,45 @@ describe("SSRF protection", () => {
 		});
 		it("fails closed on invalid input", () => {
 			expect(isPrivateIpAddress("not-an-ip")).toBe(true);
+		});
+	});
+
+	describe("validateUrlForFetch", () => {
+		it("blocks localhost URLs", async () => {
+			await expect(validateUrlForFetch("http://localhost/test")).resolves.toEqual({
+				safe: false,
+				reason: "Blocked hostname: localhost",
+			});
+		});
+
+		it("allows public IP literals without DNS resolution", async () => {
+			const resolveSpy = vi.fn(async (_hostname: string) => ["93.184.216.34"]);
+			ssrfTesting.setDnsResolverForTests(resolveSpy);
+
+			await expect(validateUrlForFetch("https://8.8.8.8/path")).resolves.toEqual({
+				safe: true,
+			});
+			expect(resolveSpy).not.toHaveBeenCalled();
+		});
+
+		it("blocks when DNS resolves to a private IP", async () => {
+			ssrfTesting.setDnsResolverForTests(async (_hostname: string) => ["10.0.0.5"]);
+
+			await expect(validateUrlForFetch("https://public.example/test")).resolves.toEqual({
+				safe: false,
+				reason: "DNS resolved to private IP: 10.0.0.5",
+			});
+		});
+
+		it("fails closed when DNS resolution errors", async () => {
+			ssrfTesting.setDnsResolverForTests(async (_hostname: string) => {
+				throw new Error("lookup failed");
+			});
+
+			await expect(validateUrlForFetch("https://public.example/test")).resolves.toEqual({
+				safe: false,
+				reason: "DNS resolution failed: public.example",
+			});
 		});
 	});
 });

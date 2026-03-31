@@ -109,6 +109,8 @@ The public API must not expose:
 - inert host-specific fields
 - plugin-runtime leakage as a public compatibility promise
 
+Plugin support is intentionally narrow. The SDK may keep a plugin seam for web capabilities such as web search providers and related web tooling, but it should not grow a broad general-purpose plugin platform for non-web SDK features.
+
 ### 6.2 Internal Runtime Layer
 
 The internal runtime must be reorganized around the actual OpenClaw embedded seam:
@@ -216,6 +218,8 @@ Optional built-ins are not required to ship all at once, but each must be explic
 ### 8.3 Host-Bridged Tools
 
 Some capabilities may be exposed through host-provided tools instead of SDK-native built-ins when that is the correct architecture. This is acceptable only when the public behavior remains equivalent.
+
+This does not imply a broad plugin architecture. Outside the web capability area, new extensibility should prefer core built-ins, hosted tools, hooks, or MCP instead of additional plugin surfaces.
 
 ### 8.4 Out-of-Scope Tools
 
@@ -325,6 +329,8 @@ The SDK must not rely on a message flow that drops updated loop state after a co
 
 ### 10.5 Compaction
 
+> **Status: ✅ Implemented (truncation-based v1).** `requestCompaction()` and `maybeCompactByTokens()` now perform truncation-based compaction: older messages are replaced with a concise summary while recent messages are preserved. The implementation fires `before_compaction`/`after_compaction` hooks, emits `compaction_started`/`compaction_finished` stream events, and updates usage snapshots. Context window size is dynamically resolved per model. Future enhancement: upgrade to LLM-based summarization when deeper conversation preservation is needed.
+
 Compaction must be a working runtime capability, not a timestamp placeholder.
 
 The SDK must:
@@ -406,21 +412,27 @@ Failure must be explicit and actionable.
 
 The SDK is acceptable only when all of the following are true:
 
-1. One SDK call can start a run that autonomously executes tool/model/tool/model turns until terminal completion, host interruption, or an explicit wait-for-input boundary.
-2. `web_search` and `web_fetch` ship as built-in SDK capabilities and their behavior is synchronized to OpenClaw source semantics rather than the current simplified local implementations.
-3. Every SDK-suitable OpenClaw tool is explicitly classified as `core built-in`, `optional built-in`, `host-bridged`, or `out-of-scope`.
-4. Hosted tools, approvals, and user-input pauses suspend and resume the same run rather than ending the turn synthetically.
-5. Tool results preserve structured `details` as well as rendered content.
-6. Sessions support create, continue, resume-by-id, fork, enumerate, and transcript/history access.
-7. The SDK exposes a hook system covering the SDK-native hook families listed in this spec.
-8. Host-bridged hook families can be emitted by the host without reintroducing channel/gateway responsibilities into the SDK.
-9. MCP integration works for local-process and HTTP transports, alongside in-process custom tools.
-10. Subagents are programmatic SDK features with lifecycle support and scoped tool access.
-11. Streaming supports both incremental events and terminal completion semantics suitable for real-time UI consumption.
-12. File checkpointing and rewind are available whenever file mutation tools are enabled.
-13. Missing credentials fail loudly instead of falling back to stub behavior.
-14. All VisionClaw compatibility code and exports are removed from the package.
-15. All public naming is standardized on `General Agent SDK` and `GeneralAgent*`.
+> **Implementation status audit — last updated 2026-03-31 (post-convergence)**
+>
+> ✅ = fully satisfied, ⚠️ = partially satisfied, ❌ = not started
+>
+> **15 of 15 fully satisfied. 0 partially satisfied. 0 not started.**
+
+1. ✅ One SDK call can start a run that autonomously executes tool/model/tool/model turns until terminal completion, host interruption, or an explicit wait-for-input boundary.
+2. ✅ `web_search` and `web_fetch` ship as built-in SDK capabilities and their behavior is synchronized to OpenClaw source semantics rather than the current simplified local implementations.
+3. ✅ Every SDK-suitable OpenClaw tool is explicitly classified as `core built-in`, `optional built-in`, `host-bridged`, or `out-of-scope`. — *Tool catalog with runtime classification table is implemented and tested.*
+4. ✅ Hosted tools, approvals, and user-input pauses suspend and resume the same run rather than ending the turn synthetically. — *Same-process continuation works. Restart-safe continuation works for both single-tool (`agent_loop_continue_single_tool`) and multi-tool (`agent_loop_continue_multi_tool`) scenarios.*
+5. ✅ Tool results preserve structured `details` as well as rendered content.
+6. ✅ Sessions support create, continue, resume-by-id, fork, enumerate, and transcript/history access.
+7. ✅ The SDK exposes a hook system covering the SDK-native hook families listed in this spec. — *All 19 SDK-native hooks auto-fire at runtime: model/prompt hooks, `llm_input`/`llm_output`, `agent_end`, tool hooks (`before_tool_call`, `after_tool_call`), persist hooks (`tool_result_persist`, `before_message_write`), session lifecycle (`session_start`, `session_end`), `before_reset`, compaction hooks (`before_compaction`, `after_compaction`), and subagent lifecycle hooks (`subagent_spawning`, `subagent_spawned`, `subagent_ended`).*
+8. ✅ Host-bridged hook families can be emitted by the host without reintroducing channel/gateway responsibilities into the SDK. — *`sdk.emitHook(...)` is implemented and tested.*
+9. ✅ MCP integration works for local-process and HTTP transports, alongside in-process custom tools.
+10. ✅ Subagents are programmatic SDK features with lifecycle support and scoped tool access. — *`subagents` is a core built-in tool with first-class child-session runtime. The SDK internally creates a child `GeneralAgentSdkSession` with independent message history, scoped system prompt, scoped tool access (excluding `subagents` itself to prevent recursion), and parent/child coordination. All 4 lifecycle hooks fire: `subagent_spawning` (can block), `subagent_delivery_target`, `subagent_spawned`, `subagent_ended`. Test coverage in `subagent-runtime.test.ts` (3 tests).*
+11. ✅ Streaming supports both incremental events and terminal completion semantics suitable for real-time UI consumption.
+12. ✅ File checkpointing and rewind are available whenever file mutation tools are enabled.
+13. ✅ Missing credentials fail loudly instead of falling back to stub behavior. — *Fully satisfied: without an API key and without a matching hosted-tool path, `streamTurn()` throws a hard error. The old "Acknowledged:" silent stub fallback has been removed. Test coverage in `missing-credentials.test.ts` verifies both the error path and the hosted-tool fallback.*
+14. ✅ All VisionClaw compatibility code and exports are removed from the package.
+15. ✅ All public naming is standardized on `General Agent SDK` and `GeneralAgent*`.
 
 ## 18. Immediate Follow-Up Work
 

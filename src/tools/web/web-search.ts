@@ -1,37 +1,66 @@
-import { z } from "zod";
 import type { GeneralAgentTool } from "../tool-interface.js";
-import { textResult, failedTextResult } from "../shared/tool-result.js";
+import { jsonResult } from "../shared/tool-result.js";
+import {
+	resolveWebSearchDefinition,
+	resolveWebSearchProviderId,
+	runWebSearch,
+} from "./web-search-runtime.js";
+import { SEARCH_CACHE, type RuntimeWebSearchMetadata, type WebSearchConfig, type WebSearchProviderEntry } from "./web-search-provider-common.js";
 
-const webSearchSchema = z.object({
-	query: z.string().describe("Search query"),
-	count: z.number().optional().describe("Number of results (default 5, max 10)"),
-});
+export type WebSearchToolOptions = {
+	apiKey?: string;
+	enabled?: boolean;
+	provider?: string;
+	cacheTtlMinutes?: number;
+	timeoutSeconds?: number;
+	maxResults?: number;
+	brave?: WebSearchConfig["brave"];
+	duckduckgo?: WebSearchConfig["duckduckgo"];
+	env?: NodeJS.ProcessEnv;
+	providerId?: string;
+	runtimeWebSearch?: RuntimeWebSearchMetadata;
+	providers?: WebSearchProviderEntry[];
+	runtimeProviders?: WebSearchProviderEntry[];
+	preferRuntimeProviders?: boolean;
+};
 
-export function createWebSearchTool(): GeneralAgentTool | null {
-	const apiKey = process.env.BRAVE_SEARCH_API_KEY;
-	if (!apiKey) return null;
+export function createWebSearchTool(options: WebSearchToolOptions = {}): GeneralAgentTool | null {
+	const search: WebSearchConfig = {
+		enabled: options.enabled,
+		provider: options.provider,
+		apiKey: options.apiKey,
+		cacheTtlMinutes: options.cacheTtlMinutes,
+		timeoutSeconds: options.timeoutSeconds,
+		maxResults: options.maxResults,
+		brave: options.brave,
+		duckduckgo: options.duckduckgo,
+	};
+	const resolved = resolveWebSearchDefinition({
+		search,
+		env: options.env,
+		providerId: options.providerId,
+		runtimeWebSearch: options.runtimeWebSearch,
+		providers: options.providers,
+		runtimeProviders: options.runtimeProviders,
+		preferRuntimeProviders: options.preferRuntimeProviders,
+	});
+	if (!resolved) {
+		return null;
+	}
 
 	return {
 		name: "web_search",
-		description: "Search the web for information.",
-		parameters: webSearchSchema,
+		description: resolved.definition.description,
+		parameters: resolved.definition.parameters,
 		async execute(callId, params) {
-			const { query, count = 5 } = webSearchSchema.parse(params);
-			const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=${Math.min(count, 10)}`;
-
-			try {
-				const res = await fetch(url, {
-					headers: { "X-Subscription-Token": apiKey, Accept: "application/json" },
-				});
-				if (!res.ok) return failedTextResult(`Search failed: ${res.status}`);
-				const data = await res.json() as any;
-				const results = (data.web?.results ?? [])
-					.map((r: any) => `**${r.title}**\n${r.url}\n${r.description ?? ""}`)
-					.join("\n\n");
-				return textResult(results || "No results found.");
-			} catch (err) {
-				return failedTextResult(`Search failed: ${err instanceof Error ? err.message : String(err)}`);
-			}
+			void callId;
+			return jsonResult(await resolved.definition.execute(params as Record<string, unknown>));
 		},
 	};
 }
+
+export const __testing = {
+	SEARCH_CACHE,
+	resolveSearchProvider: resolveWebSearchProviderId,
+	runWebSearch,
+};

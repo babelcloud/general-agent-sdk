@@ -28,21 +28,13 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./compat/visionclaw": {
-      "types": "./dist/compat/visionclaw/index.d.ts",
-      "default": "./dist/compat/visionclaw/index.js"
-    },
-    "./plugin-sdk": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
     }
   },
   "engines": {
     "node": ">=22.14.0"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "rm -rf dist && tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "prepack": "pnpm run build",
     "test": "vitest run",
@@ -53,7 +45,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
+    "@mozilla/readability": "^0.6.0",
     "diff": "^7.0.0",
+    "linkedom": "^0.18.12",
     "partial-json": "^0.1.7",
     "zod": "^4.3.6"
   },

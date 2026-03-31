@@ -22,27 +22,6 @@ export function createHostedToolSuspendEvents(params: {
   ];
 }
 
-export function createHostedToolResumeEvents(params: {
-  callId: string;
-  toolName: string;
-  output: unknown;
-  isError?: boolean;
-}): GeneralAgentStreamEvent[] {
-  return [
-    {
-      kind: "tool_result",
-      callId: params.callId,
-      toolName: params.toolName,
-      output: params.output,
-      isError: params.isError,
-    },
-    {
-      kind: "turn_complete",
-      stopReason: params.isError ? "tool_error" : "tool_result",
-    },
-  ];
-}
-
 export function createAssistantCompletionEvents(params: {
   text: string;
   stopReason?: string;

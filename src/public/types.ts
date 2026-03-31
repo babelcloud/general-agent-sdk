@@ -24,6 +24,23 @@ export interface GeneralAgentSessionIdentity {
   sessionKey: string;
 }
 
+export interface GeneralAgentResumeSessionParams {
+  sessionFile?: string;
+  authProfileId?: string;
+  rawEventLogPath?: string;
+  anthropicApiKey?: string;
+  systemPrompt?: string;
+  modelRef?: string;
+}
+
+export interface GeneralAgentContinueSessionParams extends GeneralAgentResumeSessionParams {
+  identity: GeneralAgentSessionIdentity;
+}
+
+export interface GeneralAgentForkSessionParams extends GeneralAgentResumeSessionParams {
+  identity: GeneralAgentSessionIdentity;
+}
+
 export interface GeneralAgentSessionParams {
   identity: GeneralAgentSessionIdentity;
   systemPrompt: string;
@@ -56,6 +73,57 @@ export interface GeneralAgentCompactionOptions {
 }
 
 export interface GeneralAgentCurrentQueryLike {
-  mcpServerStatus?(): Promise<unknown>;
+  mcpServerStatus?(): Promise<GeneralAgentMcpServerStatus[]>;
   toggleMcpServer?(serverName: string, enabled: boolean): Promise<void>;
+}
+
+export interface GeneralAgentMcpStdioServerConfig {
+  transport: "stdio";
+  command: string;
+  args?: string[];
+  cwd?: string;
+  env?: Record<string, string>;
+}
+
+export interface GeneralAgentMcpHttpServerConfig {
+  transport: "http";
+  url: string;
+  headers?: Record<string, string>;
+}
+
+export type GeneralAgentMcpServerConfig =
+  | GeneralAgentMcpStdioServerConfig
+  | GeneralAgentMcpHttpServerConfig;
+
+export interface GeneralAgentMcpServerStatus {
+  serverName: string;
+  transport: GeneralAgentMcpServerConfig["transport"];
+  enabled: boolean;
+  supported: boolean;
+  error?: string;
+}
+
+export interface GeneralAgentFileCheckpointFile {
+  path: string;
+  existedBefore: boolean;
+}
+
+export interface GeneralAgentFileCheckpoint {
+  id: string;
+  toolName: string;
+  callId: string;
+  createdAtMs: number;
+  files: GeneralAgentFileCheckpointFile[];
+}
+
+export interface GeneralAgentStoredSessionSummary {
+  sessionId: string;
+  sessionKey: string;
+  mode: GeneralAgentSessionIdentity["mode"];
+  modelRef: string;
+  systemPrompt: string;
+  transcriptPath?: string | null;
+  createdAtMs: number;
+  updatedAtMs: number;
+  forkedFromSessionId?: string;
 }
