@@ -29,6 +29,7 @@ export type ToolExecutionMode = "sequential" | "parallel";
 export type AgentToolCall = Extract<AssistantMessage["content"][number], { type: "toolCall" }>;
 
 export interface BeforeToolCallResult {
+	args?: unknown;
 	block?: boolean;
 	reason?: string;
 }

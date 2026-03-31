@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { createGeneralAgentAgentSdk, type GeneralAgentLogEvent } from "../../src/index.js";
+import { createGeneralAgentSdk, type GeneralAgentLogEvent } from "../../src/index.js";
 
 describe("persistence and logging", () => {
   const tempDirs: string[] = [];
@@ -28,7 +28,7 @@ describe("persistence and logging", () => {
       "sess-general.jsonl",
     );
 
-    const sdk = await createGeneralAgentAgentSdk({
+    const sdk = await createGeneralAgentSdk({
       workspaceDir: path.join(root, "workspace"),
       stateDir: path.join(root, "profile"),
       agentDir: path.join(root, "profile", "providers", "general-agent", "embedded"),
@@ -60,7 +60,13 @@ describe("persistence and logging", () => {
           return sessionFile;
         },
       },
-      hostedTools: [],
+      hostedTools: [
+        {
+          name: "finish",
+          description: "finish the task",
+          inputSchema: { type: "object", properties: {} },
+        },
+      ],
     });
 
     const rawEventLogPath = path.join(
@@ -76,7 +82,7 @@ describe("persistence and logging", () => {
       identity: {
         mode: "general",
         sessionId: "sess-general",
-        sessionKey: "visionclaw:default:general",
+        sessionKey: "host:default:general",
       },
       systemPrompt: "system prompt line 1\nline 2",
       modelRef: "openai/gpt-5.4",
@@ -86,7 +92,7 @@ describe("persistence and logging", () => {
 
     for await (const _event of session.streamTurn({
       role: "user",
-      content: [{ type: "text", text: "say hello" }],
+      content: [{ type: "text", text: "please finish now" }],
     })) {
       // drain
     }

@@ -11,6 +11,7 @@ describe("distribution and ci", () => {
     ) as {
       files?: string[];
       scripts?: Record<string, string>;
+      exports?: Record<string, unknown>;
     };
 
     expect(packageJson.files).toContain("dist/**/*");
@@ -18,6 +19,8 @@ describe("distribution and ci", () => {
     expect(packageJson.files).not.toContain("tests/**/*");
     expect(packageJson.scripts?.prepack).toBe("pnpm run build");
     expect(packageJson.scripts?.["test:e2e"]).toBe("node scripts/package-smoke.mjs");
+    expect(packageJson.exports?.["./compat/visionclaw"]).toBeUndefined();
+    expect(packageJson.exports?.["./plugin-sdk"]).toBeUndefined();
 
     const workflow = fs.readFileSync(
       path.join(ROOT, ".github", "workflows", "sdk-ci.yml"),
@@ -31,7 +34,7 @@ describe("distribution and ci", () => {
     expect(workflow).toContain("pnpm run test:e2e");
   });
 
-  it("keeps the compat/visionclaw entrypoint in the built dist tree", () => {
+  it("does not ship a compat/visionclaw entrypoint in the built dist tree", () => {
     const compatEntrypoint = path.join(
       ROOT,
       "dist",
@@ -40,6 +43,6 @@ describe("distribution and ci", () => {
       "index.js",
     );
 
-    expect(fs.existsSync(compatEntrypoint)).toBe(true);
+    expect(fs.existsSync(compatEntrypoint)).toBe(false);
   });
 });

@@ -4,3 +4,11 @@ dist/
 coverage/
 .turbo/
 *.log
+.general-agent-state/
+.general-agent-agent/
+.specstory/
+.vscode/
+examples/smoke-test-debug*.ts
+examples/smoke-test-anthropic-via-gru.ts
+examples/smoke-test-openai.ts
+examples/smoke-test-raw.ts

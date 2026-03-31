@@ -37,6 +37,7 @@ export function adaptAgentEventToStreamEvents(
             callId: event.toolCallId,
             toolName: event.toolName,
             error: errorText,
+            details: event.result?.details,
           },
         ];
       }
@@ -46,6 +47,7 @@ export function adaptAgentEventToStreamEvents(
           callId: event.toolCallId,
           toolName: event.toolName,
           output: event.result?.content ?? [],
+          details: event.result?.details,
         },
       ];
 

@@ -10,10 +10,16 @@ if (raw.version !== 1) {
 }
 
 for (const entry of raw.entries) {
-  if (!entry.dest.startsWith("src/upstream/openclaw/")) {
-    throw new Error(`forbidden destination path: ${entry.dest}`);
+  if (entry.mode !== "copied" && entry.mode !== "adapted") {
+    throw new Error(`unsupported provenance mode: ${entry.mode}`);
   }
-  if (!entry.upstream.startsWith("src/")) {
+  if (entry.mode === "copied" && !entry.dest.startsWith("src/upstream/openclaw/")) {
+    throw new Error(`copied entries must live under src/upstream/openclaw/: ${entry.dest}`);
+  }
+  if (entry.mode === "adapted" && !entry.dest.startsWith("src/")) {
+    throw new Error(`adapted entries must live under src/: ${entry.dest}`);
+  }
+  if (!entry.upstream.startsWith("src/") && !entry.upstream.startsWith("extensions/")) {
     throw new Error(`upstream path must be repo-relative: ${entry.upstream}`);
   }
   if (!fs.existsSync(path.join(root, entry.dest))) {

@@ -23,6 +23,7 @@ export interface PendingHostedCall {
  */
 export class HostedToolBridge {
   private pending: PendingHostedCall | null = null;
+  private readonly errorResults = new Set<string>();
 
   /**
    * Wrap a hosted tool definition as an AgentTool.
@@ -68,7 +69,7 @@ export class HostedToolBridge {
   /**
    * Provide a result for the pending hosted tool call.
    */
-  submitResult(callId: string, output: unknown): void {
+  submitResult(callId: string, output: unknown, details: unknown = output): void {
     if (!this.pending || this.pending.callId !== callId) {
       throw new Error(`No pending hosted tool call for callId: ${callId}`);
     }
@@ -76,22 +77,35 @@ export class HostedToolBridge {
     this.pending = null;
     p.resolve({
       content: [{ type: "text", text: typeof output === "string" ? output : JSON.stringify(output) }],
-      details: output,
+      details,
     });
   }
 
   /**
    * Provide an error for the pending hosted tool call.
    */
-  submitError(callId: string, error: string): void {
+  submitError(callId: string, error: string, details: unknown = { error }): void {
     if (!this.pending || this.pending.callId !== callId) {
       throw new Error(`No pending hosted tool call for callId: ${callId}`);
     }
     const p = this.pending;
     this.pending = null;
+    this.errorResults.add(callId);
     p.resolve({
-      content: [{ type: "text", text: `Error: ${error}` }],
-      details: { error },
+      content: [{ type: "text", text: error }],
+      details,
     });
+  }
+
+  consumeSubmittedError(callId: string): boolean {
+    if (!this.errorResults.has(callId)) {
+      return false;
+    }
+    this.errorResults.delete(callId);
+    return true;
+  }
+
+  hasSubmittedError(callId: string): boolean {
+    return this.errorResults.has(callId);
   }
 }
