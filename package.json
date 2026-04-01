@@ -1,7 +1,7 @@
 {
   "name": "general-agent-sdk",
   "version": "0.1.0",
-  "description": "Session-first embedded Agent execution kernel SDK — stream LLM responses, manage hosted tools, and control agent sessions with full host ownership.",
+  "description": "TypeScript SDK for building AI agents that call tools, manage sessions, and ship to production.",
   "type": "module",
   "license": "MIT",
   "repository": {
